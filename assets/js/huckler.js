@@ -215,7 +215,6 @@ this.write = function(text) {
 		if (text === undefined) {
 			message.destroy();
 			message = false;
-			return;
 		} else {
 			message.setText(text);
 		}
@@ -439,7 +438,7 @@ this.add_link = function(nid1,nid2,weight) {
 	self.nodes[nid2].links[self.nodes[nid2].links.length] = line.getId();
 
 	// finish guide
-	if (inode==1) { this.write(); }
+	if (ilink==1) { this.write(); }
 
 	linkLayer.batchDraw();
 
