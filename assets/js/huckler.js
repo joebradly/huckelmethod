@@ -7,6 +7,7 @@ $('#huckler')
 	.append($('<div id="huckler_spectrum" class="huckler_spectrum"></div>'));
 
 var model = new Model('huckler_model');
+model.write("Click the canvas to add nodes to your model.");
 var editor = new Editor('huckler_editor');
 var spectrum = new Spectrum('huckler_spectrum');
 
@@ -161,7 +162,7 @@ var ilink = 0; // running index
 
 var message = false;
 
-this.write("Click the canvas to add nodes to your model.");
+
 
 this.draw = new DrawMode($('#drawmode'));
 this.diag = new DrawMode($('#diagmode'));
