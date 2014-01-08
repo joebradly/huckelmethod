@@ -1,0 +1,99 @@
+<html lang="en">
+<head>
+<!-- <base href="http://huckelmethod.com/" /> -->
+<title>huckelmethod.com</title>
+<meta http-equiv="content-type" content="text/html;charset=UTF-8"> 
+<meta charset="utf-8">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Draw and solve Hückel models directly in your browser.">
+<meta name="distribution" content="web">
+<meta name="keyword" content="huckel, hückel, chemistry, pi system, diagonalization, huckel method, molecular, orbital, MO, HOMO, LUMO">
+<!-- Open Graph -->
+<meta property="og:title" content="Hückel Method">
+<meta property="og:image" content="http://huckelmethod.com/assets/img/posterboy.
+jpg">
+<meta property="og:url" content="http://huckelmethod.com">
+<meta property="og:site_name" content="HückelMethod.com">
+<!-- Links and Scripts -->
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min
+.js"></script> -->
+<script src="assets/js/jquery-1.10.2.min.js"></script>
+<script src="assets/js/kinetic-v4.7.4.min.js"></script>
+<script src="assets/js/numeric-1.2.6.js"></script>
+<link href="assets/css/huckler.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+
+<h1>Hückel Method</h1>
+
+<menu>
+<li><a href="index.html">app</a></li>
+<li><a href="details.html">details</a></li>
+<li><a href="about.html">about</a></li>
+</menu>
+
+<a class="feedback" href="http://huckel.uservoice.com">Suggestions and Feedback</a>
+
+<div id="huckler"></div>
+
+<div id="controls">
+	<p>Edit Model <a id="drawmode" class="button">OFF</a> - <a id="clear" class="button">Clear Model</a></p>
+	<p>Continous evaluation <a id="diagmode" class="button">OFF</a> - <a id="diagonalize" class="button">Diagonlize</a></p>
+	<p><a id="export" class="button">Save Model</a> (dosen't work in IE)</p>
+</div>
+
+<script defer="defer" src="assets/js/huckler.js"></script>
+
+<script type="text/javascript">
+$(function() {
+
+	var message = "Click the canvas to add nodes to your model.";
+	model.write(message);
+	model.draw.toggle();
+	model.diag.toggle();
+
+	$('#clear').on('click',function() {
+		reset();
+		model.draw.toggle();
+		model.diag.toggle();
+		model.write(message);
+	});
+	$('#diagonalize').on('click',function() {
+		spectrum.diagonalize();
+	})
+	$('#export').on('click',function() {
+		model.dump();
+	});
+
+	var models = [];
+	models.push({'file':'ring3', 'name': 'Ring[3]'});
+	models.push({'file':'ring4', 'name': 'Ring[4]'});
+	models.push({'file':'ring5', 'name': 'Ring[5]'});
+	models.push({'file':'ring6', 'name': 'Ring[6]'});
+	models.push({'file':'quinone', 'name': 'Quinone(8)'});
+	models.push({'file':'azulene', 'name': 'Azulene'});
+	models.push({'file':'graphene', 'name': 'Graphene'});
+
+	var model_selector = $('<select id="model"/>');
+	model_selector.append($('<option value="' + false + '">(select)</option>'));
+	for (var i = 0; i < models.length; i++) {
+		model_selector.append($('<option value="' + models[i].file + '">'+ models[i].name +'</option>'));
+	}
+	model_selector.on('change',function(){ 
+		console.log('file clicked');
+		if (model_selector.val()!='false') {
+			model.loadFromFile(model_selector.val());
+		}
+		model_selector.blur();
+	})
+
+	var upload = $('<input type="file" id="files" name="files"/>');
+	upload.on('change',model.uploadFromFile);
+
+	$('#controls').append($('<p></p>').append('Load ').append(model_selector).append(' or upload ').append(upload));
+
+});
+</script>
+
+</body>
+</html>
