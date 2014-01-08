@@ -32,10 +32,12 @@ function keydown(e) {
 		spectrum.selectNext(-1);
     }
     if (e.keyCode==8) { // backspace
-		if (model.selected!==false && !($('#weight').focus())) {
+		if (model.selected!==false && $(document.activeElement).attr('id')!='weight') {
 			$('#delete').trigger('click');
 		}
     }
+
+    e.preventDefault();
 
     console.log(e.keyCode);
 }
@@ -98,7 +100,7 @@ this.edit = function(subject,id) {
 
 	this.container
 		.append(
-			$('<h3>Edit node</h3>')
+			$('<h3>Edit ' + subject + '</h3>')
 		)
 		.append(
 			$('<form/>')
@@ -158,6 +160,7 @@ this.links = {};
 var ilink = 0; // running index
 
 var message = false;
+this.write("Click the canvas to add nodes to your model.")
 
 this.draw = new DrawMode($('#drawmode'));
 this.diag = new DrawMode($('#diagmode'));
@@ -194,24 +197,25 @@ stage.getContainer().addEventListener('mousedown', function (e) {
 
 this.write = function(text) {
 
-	if (message!== false && text === '') {
+	if (message!== false && text === undefined) {
 		message.destroy();
 		message = false;
-		linkLayer.draw();
 		return;
+	} else if (message !== false) {
+		message.setText(text);
+	} else {
+		message = new Kinetic.Text({
+			x: 15,
+			y: 15,
+			text: text,
+			fontSize: 16,
+			fontFamily: 'Arial',
+			fill: 'gray'
+		});
+		linkLayer.add(message);
 	}
 
-	message = new Kinetic.Text({
-        x: 15,
-        y: 15,
-        text: text,
-        fontSize: 16,
-        fontFamily: 'Arial',
-        fill: 'gray'
-      });
-
-	eigenLayer.add(message);
-	eigenLayer.draw();
+	linkLayer.draw();
 };
 
 // Add_node
@@ -288,6 +292,10 @@ this.add_node = function(x,y,weight)
 	if (self.selected !== false && self.selected.getClassName() == 'Circle') {
 		self.add_link(this.selected.getId(),node.getId());
 		self.unselect(this.selected);
+	}
+
+	if (ilink == 0) {
+		self.write("Select two nodes to add a link between them.");
 	}
 
 	return node.getId();
@@ -425,6 +433,8 @@ this.add_link = function(nid1,nid2,weight) {
 	// add to nodes
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
 	self.nodes[nid2].links[self.nodes[nid2].links.length] = line.getId();
+
+	this.write();
 
 	linkLayer.batchDraw();
 
@@ -610,6 +620,8 @@ this.reset = function () {
 
 	this.draw.reset();
 	this.diag.reset();
+
+	this.write("Click the canvas to add nodes to your model.")
 };
 
 // eigen
