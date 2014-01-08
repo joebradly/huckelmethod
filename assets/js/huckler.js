@@ -22,23 +22,24 @@ var spectrum = new Spectrum('huckler_spectrum');
 function keydown(e) {
     e = e || window.event;
 
-    if (e.keyCode==65 || e.keyCode==69) { // shift
+    if (e.keyCode==65 || e.keyCode==69) { // a or e
 		//model.draw.reset();
 		model.draw.toggle();
     }
     if (e.keyCode==38) { // up
 		spectrum.selectNext(+1);
+		e.preventDefault();
     }
     if (e.keyCode==40) { // down
 		spectrum.selectNext(-1);
+		e.preventDefault();
     }
     if (e.keyCode==8) { // backspace
 		if (model.selected!==false && $(document.activeElement).attr('id')!='weight') {
 			$('#delete').trigger('click');
+			e.preventDefault();
 		}
     }
-
-    e.preventDefault();
 
     console.log(e.keyCode);
 }
@@ -431,8 +432,8 @@ this.add_link = function(nid1,nid2,weight) {
 	console.log('added ' + line.getId() + ' between ' + nid1 + ' and ' + nid2);
 
 	linkLayer.add(line); // add line to layer
-	console.log(ilink);
-	if (ilink === 0) { console.log('updating guide'); self.write(''); } // finish guide
+
+	if (ilink === 0) { self.write(''); } // finish guide
 
 	ilink++; // increment running index
 
