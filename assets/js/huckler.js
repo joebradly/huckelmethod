@@ -162,8 +162,6 @@ var ilink = 0; // running index
 
 var message = false;
 
-
-
 this.draw = new DrawMode($('#drawmode'));
 this.diag = new DrawMode($('#diagmode'));
 this.selected = false;
@@ -433,7 +431,8 @@ this.add_link = function(nid1,nid2,weight) {
 	console.log('added ' + line.getId() + ' between ' + nid1 + ' and ' + nid2);
 
 	linkLayer.add(line); // add line to layer
-	if (ilink === 0) { self.write(""); } // finish guide
+	console.log(ilink);
+	if (ilink === 0) { console.log('updating guide'); self.write(''); } // finish guide
 
 	ilink++; // increment running index
 
