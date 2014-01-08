@@ -160,7 +160,8 @@ this.links = {};
 var ilink = 0; // running index
 
 var message = false;
-this.write("Click the canvas to add nodes to your model.")
+
+this.write("Click the canvas to add nodes to your model.");
 
 this.draw = new DrawMode($('#drawmode'));
 this.diag = new DrawMode($('#diagmode'));
@@ -197,22 +198,26 @@ stage.getContainer().addEventListener('mousedown', function (e) {
 
 this.write = function(text) {
 
-	if (message!== false && text === undefined) {
-		message.destroy();
-		message = false;
-		return;
-	} else if (message !== false) {
-		message.setText(text);
+	if (message === false) {
+		if (text !== undefined) {
+			message = new Kinetic.Text({ // create message
+				x: 15,
+				y: 15,
+				text: text,
+				fontSize: 16,
+				fontFamily: 'Arial',
+				fill: 'gray'
+			});
+			linkLayer.add(message);
+		}
 	} else {
-		message = new Kinetic.Text({
-			x: 15,
-			y: 15,
-			text: text,
-			fontSize: 16,
-			fontFamily: 'Arial',
-			fill: 'gray'
-		});
-		linkLayer.add(message);
+		if (text === undefined) {
+			message.destroy();
+			message = false;
+			return;
+		} else {
+			message.setText(text);
+		}
 	}
 
 	linkLayer.draw();
@@ -294,9 +299,7 @@ this.add_node = function(x,y,weight)
 		self.unselect(this.selected);
 	}
 
-	if (ilink == 0) {
-		self.write("Select two nodes to add a link between them.");
-	}
+	if (ilink == 0) { self.write("Select two nodes to add a link between them."); }
 
 	return node.getId();
 };
@@ -434,7 +437,8 @@ this.add_link = function(nid1,nid2,weight) {
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
 	self.nodes[nid2].links[self.nodes[nid2].links.length] = line.getId();
 
-	this.write();
+	// finish guide
+	if (inode==1) { this.write(); }
 
 	linkLayer.batchDraw();
 
