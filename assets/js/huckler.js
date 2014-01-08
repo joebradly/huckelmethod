@@ -220,7 +220,7 @@ this.write = function(text) {
 		}
 	}
 
-	linkLayer.draw();
+	linkLayer.batchDraw();
 };
 
 // Add_node
@@ -231,12 +231,17 @@ this.add_node = function(x,y,weight)
 		weight = 0;
 	}
 	
+	var nodeColor = 'gray';
+	if (weight < 0) {
+		nodeColor = 'black';
+	}
+
 	// graphical node
 	var node = new Kinetic.Circle({
 		x: x,
 		y: y,
-		radius: 14,
-		fill: 'rgb(140,140,140)',
+		radius: 14 + Math.abs(weight) * 1.5,
+		fill: nodeColor,
 		stroke: 'rgb(255,255,255)',
 		strokeWidth: 4,
 		draggable: true,
@@ -262,8 +267,8 @@ this.add_node = function(x,y,weight)
 	});
 
 	// select
-	node.on('mousedown touchstart', function(evt) { 
-		self.touch_circle(this); 
+	node.on('mousedown touchstart', function(evt) {
+		self.touch_circle(this);
 		evt.cancelBubble = true;  // no bubbling
 	});
 
@@ -299,7 +304,7 @@ this.add_node = function(x,y,weight)
 		self.unselect(this.selected);
 	}
 
-	if (ilink == 0) { self.write("Select two nodes to add a link between them."); }
+	if (ilink === 0) { self.write("Select two nodes to add a link between them."); }
 
 	return node.getId();
 };
@@ -427,21 +432,22 @@ this.add_link = function(nid1,nid2,weight) {
 
 	console.log('added ' + line.getId() + ' between ' + nid1 + ' and ' + nid2);
 
-	linkLayer.add(line);
-	ilink++;
+	linkLayer.add(line); // add line to layer
+	if (ilink === 0) { self.write(""); } // finish guide
 
-	// add to links
+	ilink++; // increment running index
+
+	// add to links object
 	self.links[line.getId()] = {'nodes': [nid1, nid2], 'weight': -1};
 
-	// add to nodes
+	// add to nodes object
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
 	self.nodes[nid2].links[self.nodes[nid2].links.length] = line.getId();
-
-	// finish guide
-	if (ilink==1) { this.write(); }
-
+	
+	// redraw
 	linkLayer.batchDraw();
 
+	// evaluate
 	this.evaluate();
 
 	return line.getId();
@@ -622,10 +628,10 @@ this.reset = function () {
 	ilink = 0;
 	this.selected = false;
 
-	this.draw.reset();
+	this.draw.reset(); // reset counters
 	this.diag.reset();
 
-	this.write("Click the canvas to add nodes to your model.")
+	self.write("Click the canvas to add nodes to your model.");
 };
 
 // eigen
