@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-<base href="http://huckelmethod.com/" />
+<!--<base href="http://huckelmethod.com/" /> remove before production-->
 <title>huckelmethod.com</title>
 <meta http-equiv="content-type" content="text/html;charset=UTF-8"> 
 <meta charset="utf-8">
@@ -17,8 +17,11 @@
 <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min
 .js"></script> -->
 <script src="assets/js/jquery-1.10.2.min.js"></script>
-<script src="assets/js/kinetic-v4.7.4.min.js"></script>
+<!-- <script src="assets/js/kinetic-v4.7.4.min.js"></script> -->
+<script src="assets/js/kinetic-v5.0.0.min.js"></script>
 <script src="assets/js/numeric-1.2.6.js"></script>
+<script src="assets/js/jquery.flot.min.js"></script>
+<script src="assets/js/jquery.flot.selection.min.js"></script>
 <link href="assets/css/huckler.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
@@ -33,11 +36,19 @@
 
 <a class="feedback" href="http://huckel.uservoice.com">Suggestions and Feedback</a>
 
-<div id="huckler"></div>
+<p>Edit Model <a id="drawmode" class="button">OFF</a> - <a id="clear" class="button">Clear Model</a></p>
+<div id="huckler">
+<div class="transport_controls">
+		<a id="electrodes" class="button" data-mode="add">Add Leads</a>
+		<a id="resolvent" class="button">Resolvent</a>
+</div>
+<div class="spectrum_controls">
+	Continous <a id="diagonalize" class="button">Evaluation<a/> <a id="diagmode" class="button">OFF</a>
+</div>
+</div>
 
 <div id="controls">
-	<p>Edit Model <a id="drawmode" class="button">OFF</a> - <a id="clear" class="button">Clear Model</a></p>
-	<p>Continous evaluation <a id="diagmode" class="button">OFF</a> - <a id="diagonalize" class="button">Diagonlize</a></p>
+	
 	<p><a id="export" class="button">Save Model</a> (dosen't work in IE)</p>
 </div>
 
@@ -53,11 +64,29 @@ $(function() {
 		reset();
 		model.draw.toggle();
 		model.diag.toggle();
-		model.write(message);
 	});
+
+	$('#electrodes').on('click', function() {
+		var button = $(this);
+
+		if (button.attr('data-mode')=='add') {
+			model.add_electrodes();
+			$(this).html('Remove Leads');
+			button.attr('data-mode','remove');
+		} else {
+			model.remove_electrodes();
+			$(this).html('Add Leads')
+			button.attr('data-mode','add');
+		}		
+	});
+
+	$('#resolvent').on('click',function() {
+		transport.plot();
+	})
+
 	$('#diagonalize').on('click',function() {
 		spectrum.diagonalize();
-	})
+	});
 	$('#export').on('click',function() {
 		model.dump();
 	});

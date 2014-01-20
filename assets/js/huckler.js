@@ -4,12 +4,14 @@
 $('#huckler')
 	.append($('<div id="huckler_model"  class="huckler_model"></div>'))
 	.append($('<div id="huckler_editor" class="huckler_editor"></div>'))
-	.append($('<div id="huckler_spectrum" class="huckler_spectrum"></div>'));
+	.append($('<div id="huckler_spectrum" class="huckler_spectrum"></div>'))
+	.append($('<div id="huckler_transport" class="huckler_transport"></div>'));
 
 var model = new Model('huckler_model');
 model.write("Click the canvas to add nodes to your model.");
 var editor = new Editor('huckler_editor');
 var spectrum = new Spectrum('huckler_spectrum');
+var transport = new Transport('huckler_transport');
 
 //  _  _________   ______   ___    _    ____  ____  
 // | |/ / ____\ \ / / __ ) / _ \  / \  |  _ \|  _ \ 
@@ -106,7 +108,7 @@ this.edit = function(subject,id) {
 		)
 		.append(
 			$('<form/>')
-				.append(slider).append(datalist).append('Weight: ').append(input).append(remove)
+				.append('Weight: ').append(slider).append(datalist).append(input).append(remove)
 		);
 	
 	slider = slider
@@ -165,19 +167,20 @@ var message = false;
 
 this.draw = new DrawMode($('#drawmode'));
 this.diag = new DrawMode($('#diagmode'));
+this.transport = false;
+
 this.selected = false;
 
 // setup stage
 var stage = new Kinetic.Stage({
 	container: container,
-	width: 520,
-	height: 400
+	width: 470,
+	height: 450
 });
 
 var eigenLayer = new Kinetic.Layer();
 var linkLayer = new Kinetic.Layer();
 var nodeLayer = new Kinetic.Layer();
-
 
 stage.add(linkLayer);
 stage.add(nodeLayer);
@@ -224,16 +227,16 @@ this.write = function(text) {
 
 // Add_node
 // Add site
-this.add_node = function(x,y,weight)
+this.add_node = function(x,y,weight,options)
 {
-	if (weight === undefined) {
-		weight = 0;
-	}
+	if (weight === undefined) { weight = 0; }
+	if (options === undefined) { options = {}; }
 	
+	var draggable = true;
+	if ('draggable' in options) { draggable = options['draggable']; }
+
 	var nodeColor = 'gray';
-	if (weight < 0) {
-		nodeColor = 'black';
-	}
+	if (weight < 0) { nodeColor = 'black'; }
 
 	// graphical node
 	var node = new Kinetic.Circle({
@@ -243,18 +246,16 @@ this.add_node = function(x,y,weight)
 		fill: nodeColor,
 		stroke: 'rgb(255,255,255)',
 		strokeWidth: 4,
-		draggable: true,
+		draggable: draggable,
 		name: 'node',
 		id: 'node' + inode
 	});
 
 	// append position to data sctructure
-	self.nodes[node.getId()] = { 'x': x, 'y': y, 'links': Array(), 'weight': weight };
+	self.nodes[node.getId()] = { 'x': x, 'y': y, 'links': Array(), 'weight': weight, 'options' : options };
 
 	// cursor update
-	node.on('mouseover', function(evt) {
-		document.body.style.cursor = 'pointer';
-	});
+	node.on('mouseover', function(evt) { document.body.style.cursor = 'pointer'; });
 
 	// back to old cursor
 	node.on('mouseout', function(evt) {
@@ -377,7 +378,41 @@ this.remove_node = function(nid) {
 	this.evaluate();
 };
 
+// electrodes
+this.add_electrodes = function() {
 
+	var h = stage.getHeight();
+	var w = stage.getWidth();
+
+	this.add_node(0,h/2,10,{'electrode': true, 'draggable': false});
+	this.add_node(w,h/2,10,{'electrode': true, 'draggable': false});
+};
+
+this.get_electrodes = function() {
+	var remove = [];
+	for (var n in this.nodes) {
+		if (!(this.nodes).hasOwnProperty(n)) { continue; }
+		if (this.nodes[n].options['electrode'] === true) {
+			remove.push(n);
+		}
+	}
+	return remove;
+};
+
+this.remove_electrodes = function() {
+	var remove = this.get_electrodes();
+
+	for(var i = 0; i<remove.length; i++) {
+		this.remove_node(remove[i]);
+	}
+};
+
+this.is_electrode = function(n) {
+	if ('electrode' in model.nodes[n].options && model.nodes[n].options['electrode'] === true)
+		return true;
+	else
+		return false;
+};
 
 // Links
 
@@ -408,6 +443,7 @@ this.add_link = function(nid1,nid2,weight) {
 		return;
 	}
 
+	// strokeColor
 	var strokeColor = 'black';
 	if (weight === undefined) {
 		weight = -1;
@@ -416,6 +452,7 @@ this.add_link = function(nid1,nid2,weight) {
 		}
 	}
 
+	// line
 	var line = new Kinetic.Line({
 		points: [self.nodes[nid1].x, self.nodes[nid1].y, self.nodes[nid2].x, self.nodes[nid2].y],
 		stroke: strokeColor,
@@ -431,10 +468,9 @@ this.add_link = function(nid1,nid2,weight) {
 
 	console.log('added ' + line.getId() + ' between ' + nid1 + ' and ' + nid2);
 
-	linkLayer.add(line); // add line to layer
-
 	if (ilink === 0) { self.write(''); } // finish guide
 
+	linkLayer.add(line); // add line to layer
 	ilink++; // increment running index
 
 	// add to links object
@@ -444,6 +480,11 @@ this.add_link = function(nid1,nid2,weight) {
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
 	self.nodes[nid2].links[self.nodes[nid2].links.length] = line.getId();
 	
+	// dashed line if one is a electrode
+	if (this.is_electrode(nid1) || this.is_electrode(nid2)) {
+		line.dash([20,10]);
+	}
+
 	// redraw
 	linkLayer.batchDraw();
 
@@ -572,7 +613,9 @@ this.select = function(elm) {
 		editor.edit('link',elm.getId());
 	} else {
 		nodeLayer.batchDraw();
-		editor.edit('node',elm.getId());
+		if (!this.is_electrode(elm.getId())) {
+			editor.edit('node',elm.getId());
+		}
 	}
 	console.log('selected ' + elm.getId());
 };
@@ -630,6 +673,8 @@ this.reset = function () {
 
 	this.draw.reset(); // reset counters
 	this.diag.reset();
+
+	$('#electrodes').trigger('click');
 
 	self.write("Click the canvas to add nodes to your model.");
 };
@@ -783,8 +828,8 @@ this.settings = {'adhocshift': 10};
 
 var stage = new Kinetic.Stage({
 	container: container,
-	width: 200,
-	height: 200
+	width: 250,
+	height: 180
 });
 
 var energyLayer = new Kinetic.Layer();
@@ -802,6 +847,9 @@ this.hamiltonian = function(model) {
 			continue;
 		}
 		if (model.nodes[n].links.length > 0) {
+			if (model.is_electrode(n)) {
+				continue;
+			}
 			this.inodes.push(n);
 		}
 	}
@@ -829,6 +877,10 @@ this.hamiltonian = function(model) {
 				
 			var i1 = this.inodes.indexOf(model.links[link].nodes[0]);
 			var i2 = this.inodes.indexOf(model.links[link].nodes[1]);
+
+			if (i1 === -1 || i2 === -1) {
+				continue;
+			}
 
 			H[i1][i2] = parseFloat(model.links[link].weight);
 			H[i2][i1] = parseFloat(model.links[link].weight);
@@ -897,14 +949,14 @@ this.diagonalize = function() {
 		}
 
 		var line = new Kinetic.Line({
-			points: [25, -i/(this.energies.length-1)*160 + 180 , 50, -this.energies[i]/scale*80+100, 130, -this.energies[i]/scale*80+100],
+			points: [25, -i/(this.energies.length-1)*140 + 160 , 50, -this.energies[i]/scale*70+90, 130, -this.energies[i]/scale*70+90],
 			stroke: strokeColor,
 			strokeWidth: 3
 		});
 
 		var dot = new Kinetic.Circle({
 			x: 25,
-			y: -i/(this.energies.length-1)*160 + 180,
+			y: -i/(this.energies.length-1)*140 + 160,
 			radius: Math.min(Math.round(90/this.energies.length)-1,10),
 			fill: strokeColor,
 			stroke: strokeColor
@@ -935,7 +987,7 @@ this.diagonalize = function() {
 this.drawControls = function() {
 
 	if (controlLayer.getChildren().length > 0) {
-	 	return;
+		return;
 	}
 
 	var upObj = new Image();
@@ -1040,17 +1092,121 @@ this.reset = function() {
 
 }
 
+
+function Transport() {
+
+	this.plot = function() {
+		var res = [this.calculate()];
+
+		var options = {
+			selection: {
+				mode: "xy"
+			}
+		};
+
+		var plot = $.plot("#huckler_transport",res,options);
+
+		$("#huckler_transport").bind("plotselected", function (event, ranges) {
+
+			// clamp the zooming to prevent eternal zoom
+
+			if (ranges.xaxis.to - ranges.xaxis.from < 0.00001) {
+				ranges.xaxis.to = ranges.xaxis.from + 0.00001;
+			}
+
+			if (ranges.yaxis.to - ranges.yaxis.from < 0.00001) {
+				ranges.yaxis.to = ranges.yaxis.from + 0.00001;
+			}
+
+			// do the zooming
+
+			var plot = $.plot("#huckler_transport", res,
+				$.extend(true, {}, options, {
+					xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+					yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+				})
+			);
+		});
+	};
+
+	
+	this.calculate = function(xlim) {
+
+		if (spectrum.energies.length === 0) {
+			spectrum.diagonalize();
+		}
+
+		if (xlim === undefined) {
+			xlim = [Math.min.apply(null,spectrum.energies), Math.max.apply(null, spectrum.energies)]
+		}
+		var electrodes = model.get_electrodes();
+		var omegas = numeric.linspace(xlim[0],xlim[1],600);
+		var res = this.resolvent(omegas,electrodes);
+
+		console.log(omegas);
+		console.log(res);
+
+		return numeric.transpose([omegas, res]);
+	};
+
+	this.resolvent = function (omegas,electrodes) {
+
+		var H = spectrum.hamiltonian(model);
+
+		var inner = newFilledArray(spectrum.energies.length,0);
+
+		var el0 = model.nodes[electrodes[0]];
+		for (var i = 0; i < el0.links.length; i ++) {
+			var k = 0;
+			if ((model.links[el0.links[i]]).nodes[0]==electrodes[0]) {
+				k = 1;
+			}
+			inner[spectrum.inodes.indexOf(model.links[el0.links[i]].nodes[k])] = model.links[el0.links[i]].weight;
+		}
+
+		var outer = newFilledArray(spectrum.energies.length,0);
+
+		var el1 = model.nodes[electrodes[1]];
+
+		for (var j = 0; j < el1.links.length; j ++) {
+			var m = 0;
+			if ((model.links[el1.links[j]]).nodes[0]==electrodes[1]) {
+				m = 1;
+			}
+			outer[spectrum.inodes.indexOf(model.links[el1.links[j]].nodes[m])] = model.links[el1.links[j]].weight;
+		}
+
+		var res = Array(omegas.length);
+
+		var id = numeric.identity(spectrum.energies.length);
+
+		for (var l=0; l < omegas.length; l++) {
+			res[l] = Math.log(Math.abs(numeric.dot(inner,numeric.solve( numeric.add(numeric.mul(-omegas[l]-spectrum.settings.adhocshift,id),H,false),outer))));
+		}
+
+		return res;
+	};
+
+}
+
+
 //  __  __ ___ ____   ____
 // |  \/  |_ _/ ___| / ___|
 // | |\/| || |\___ \| |
 // | |  | || | ___) | |___
 // |_|  |_|___|____/ \____|
 
-function DrawMode(button) {
+function DrawMode(button, fcn) {
 	var self = this;
 
 	this.mode = false;
-	this.button = button.click(function() { self.toggle(); });
+	this.button = button.click(function() {
+		self.toggle();
+		console.log(fcn);
+		if (fcn !== undefined) {
+			fcn();
+		}
+	});
 
 	this.toggle = function() {
 		this.mode = !this.mode;
@@ -1078,6 +1234,15 @@ function range(a,b,c,d){d=[];c=b-a+1;while(c--)d[c]=b--;return d;}
 
 //signum
 function sign(x) { return x < 0 ? -1 : 1; }
+
+function newFilledArray(length, val) {
+    var array = [];
+    for (var i = 0; i < length; i++) {
+        array[i] = val;
+    }
+    return array;
+}
+
 
 // forcedownload
 function forceDownload(filename, text) { // not working in ie.

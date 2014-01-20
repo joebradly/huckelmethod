@@ -52,7 +52,7 @@ menu li a:hover {
 	background-color: #e5dde5;
 	border: 1px solid #aaa;
 	padding: 8px 10px;
-	margin: 0;	
+	margin: 0;
 	font-size: 11pt;
 	line-height: 1em;
 	display: inline-block;
@@ -84,15 +84,15 @@ p i {
 
 #huckler {
 	position: relative;
-	height: 400px;
+	height: 480px;
 	width: 720px;
 }
 
 .huckler_model {
-	width: 520px;
-	height: 400px;
+	width: 470px;
+	height: 450px;
 	position: absolute;
-	top: 0;
+	top: 0px;
 	left: 0;
 	background-color: #f0f0f0;
 }
@@ -102,14 +102,17 @@ p i {
 
 .huckler_editor {
 	position: absolute;
-	top: 0;
-	left: 520px;
-	height: 200px;
-	width: 200px;
+	top: 450px;
+	left: 0;
+	height: 30px;
+	width: 720px;
+	font-size: 11pt;
 }
 
 .huckler_editor h3 {
-	margin: 15px 15px 15px;
+	margin: 10px 15px 10px 10px;
+	padding: 0;
+	display: inline-block;
 }
 
 .huckler_editor .slider {
@@ -117,11 +120,12 @@ p i {
 }
 
 .huckler_editor > form {
-	margin: 0 15px;
+	margin: 10px 15px;
+	display: inline-block;
 }
 
 .huckler_editor > form > input {
-	margin: 10px 0 10px;
+	margin: 0 10px;
 }
 
 .huckler_editor input[type=text] {
@@ -135,13 +139,38 @@ p i {
 
 /* spectrum */
 
+.spectrum_controls {
+	position: absolute;
+	top: 0;
+	left: 480px;
+	width: 250px;
+	height: 35px;
+	overflow: hidden;
+}
 
 .huckler_spectrum {
 	position: absolute;
-	top: 200px;
-	left: 520px;
-	width: 200px;
-	height: 200px;
+	top: 35px;
+	left: 470px;
+	width: 250px;
+	height: 180px;
+}
+
+.transport_controls {
+	position: absolute;
+	top: 225px;
+	left: 480px;
+	width: 250px;
+	height: 45px;
+	overflow: hidden;
+}
+
+.huckler_transport {
+	position: absolute;
+	top: 270px;
+	left: 470px;
+	width: 250px;
+	height: 180px;
 }
 
 /* Misc */
