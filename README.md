@@ -1,13 +1,14 @@
 Hückel Method
 =============
 
-Draw and solve Hückel models directly in your browser.
+Draw and solve Hückel models directly in your browser. Try out a working version on [huckelmethod.com](http://huckelmethod.com).
 
 
 ## Prerequisites
 
-You must install the following javascript libraries in the `asssets/js/folder` in order to launch huckelmethod.
+If you wish to host your own version of the Hückel library, you must also include a set of external libraries in the `asssets/js/folder`:
 
 - [jQuery](http://jquery.com)
 - [KineticJS](http://kineticjs.com)
 - [numeric javascript](http://numericjs.com)
+- [jQuery.flot](http://flotcharts.org)
