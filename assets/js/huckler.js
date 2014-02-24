@@ -672,9 +672,10 @@ this.reset = function () {
 	this.selected = false;
 
 	this.draw.reset(); // reset counters
-	this.diag.reset();
+	this.diag.reset(); // reset digaonlization
 
-	$('#electrodes').trigger('click');
+	this.remove_electrodes();
+	$('#electrodes').html('Add Leads').attr('data-mode','add');
 
 	self.write("Click the canvas to add nodes to your model.");
 };
