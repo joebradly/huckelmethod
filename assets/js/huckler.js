@@ -158,54 +158,64 @@ function Model(container) {
 
 var self = this; // event delegation hack
 
-this.nodes = {};
-var inode = 0; // running index
-this.links = {};
-var ilink = 0; // running index
+this.nodes = {}; // list of all nodes
+var inode = 0;   // running index
+this.links = {}; // list of all links
+var ilink = 0;   // running index
 
-var message = false;
+var message = false;  // current message
 
-this.draw = new DrawMode($('#drawmode'));
-this.diag = new DrawMode($('#diagmode'));
-this.transport = false;
+this.draw = new DrawMode($('#drawmode'));  // are we drawing?
+this.diag = new DrawMode($('#diagmode'));  // are we diagonalizing?
+this.tran = new DrawMode($('#tranmode'));  // are we calculating resolvents?
 
-this.selected = false;
+this.transport = false; // huh?
 
-// setup stage
+this.selected = false;  // which is selected? (link or node)
+
+// Setup drawing stage
 var stage = new Kinetic.Stage({
 	container: container,
 	width: 470,
 	height: 450
 });
 
+// Add three drawing layers
 var eigenLayer = new Kinetic.Layer();
 var linkLayer = new Kinetic.Layer();
 var nodeLayer = new Kinetic.Layer();
 
+// Add them to the stage
 stage.add(linkLayer);
 stage.add(nodeLayer);
 stage.add(eigenLayer);
 
+// Listen for clicks
 stage.getContainer().addEventListener('mousedown', function (e) {
-
-	// clear eigenlayer
+	// clear eigenlayer and update message
 	self.clearEigen();
-	// self.write('');
 
-	if (self.draw.mode) { // add node
+	// Are we drawing or selecting?
+	if (self.draw.mode) 
+	{   
+		// we are drawing -> add node
 		self.add_node(e.offsetX | e.layerX, e.offsetY | e.layerY);
-	} else if (self.selected !== false) { // deselect node
+	} 
+	else if (self.selected !== false) 
+	{ 
+		// we are selecting -> deselect node
 		self.unselect();
 	}
 });
 
+// Function for writing message to the linkLayer
 this.write = function(text) {
 
 	if (message === false) {
 		if (text !== undefined) {
 			message = new Kinetic.Text({ // create message
-				x: 15,
-				y: 15,
+				x: 10,
+				y: 10,
 				text: text,
 				fontSize: 16,
 				fontFamily: 'Arial',
@@ -225,20 +235,25 @@ this.write = function(text) {
 	linkLayer.batchDraw();
 };
 
-// Add_node
-// Add site
+/////////////////////////////////////////////
+// NODES
+/////////////////////////////////////////////
+// Add node
 this.add_node = function(x,y,weight,options)
 {
-	if (weight === undefined) { weight = 0; }
+	// Defaults
+	if (weight  === undefined) { weight = 0; }
 	if (options === undefined) { options = {}; }
 	
+	// Is it draggable
 	var draggable = true;
 	if ('draggable' in options) { draggable = options['draggable']; }
 
+	// Choose node color
 	var nodeColor = 'gray';
 	if (weight < 0) { nodeColor = 'black'; }
 
-	// graphical node
+	// Create graphical node
 	var node = new Kinetic.Circle({
 		x: x,
 		y: y,
@@ -251,13 +266,14 @@ this.add_node = function(x,y,weight,options)
 		id: 'node' + inode
 	});
 
-	// append position to data sctructure
+	// Append node position to data structure
 	self.nodes[node.getId()] = { 'x': x, 'y': y, 'links': Array(), 'weight': weight, 'options' : options };
 
-	// cursor update
+	// CURSOR
+	/////////////////////////////////////////////
+	// Update the cursor when hovering
 	node.on('mouseover', function(evt) { document.body.style.cursor = 'pointer'; });
-
-	// back to old cursor
+	// Switch back to old cursor when not hovering
 	node.on('mouseout', function(evt) {
 		if (self.draw.mode) {
 			document.body.style.cursor = 'copy';
@@ -266,19 +282,22 @@ this.add_node = function(x,y,weight,options)
 		}
 	});
 
-	// select
+	// SELECTING
+	/////////////////////////////////////////////
+	// selecting the node
 	node.on('mousedown touchstart', function(evt) {
 		self.touch_circle(this);
 		evt.cancelBubble = true;  // no bubbling
 	});
 
-	// dont link when dragging
+	// DRAG
+	// Don't link when dragging
 	node.on('dragstart', function() {
 		self.unselect(this);
 		document.body.style.cursor = 'pointer';
 	});
 
-	// update nodes when dragged
+	// Update nodes when dragged
 	node.on('dragmove', function(){
 		self.nodes[this.getId()].x = this.getX();
 		self.nodes[this.getId()].y = this.getY();
@@ -286,7 +305,8 @@ this.add_node = function(x,y,weight,options)
 		// self.redraw_node_links(this.getId());
 	});
 
-	// delete if placed in lower bottom corner
+	// DELETE
+	// Delete if placed in lower bottom corner
 	node.on('dragend', function(evt) {
 		if ( (this.getY() > stage.getHeight() - 35) && (this.getX() > stage.getWidth() - 35 )) {
 			self.remove_node(this.getId());
@@ -294,48 +314,67 @@ this.add_node = function(x,y,weight,options)
 		document.body.style.cursor = 'default';
 	});
 
-	// add to nodelayer and draw it
+	// CLEAN UP
+	// Add to nodelayer and draw it
 	nodeLayer.add(node);
 	inode++;
 	nodeLayer.batchDraw();
 
+	// If another node is selected draw a link
 	if (self.selected !== false && self.selected.getClassName() == 'Circle') {
 		self.add_link(this.selected.getId(),node.getId());
 		self.unselect(this.selected);
 	}
 
+	// Guide
 	if (ilink === 0) { self.write("Select two nodes to add a link between them."); }
+
+	// Select this node
+	if (!('electrode' in options)) {
+		self.touch_circle(node);
+	}
 
 	return node.getId();
 };
 
-// touching the node
+// Touching the node
 this.touch_circle = function(elm) {
-	if (this.selected !== false && this.selected.getName() == 'node') {		// another selected node
-		var test = this.test_link(elm.getId(),this.selected.getId());			// add_link between them. false=same, number=exist ,true=creates
-		if (test === false && this.draw.mode) { // no link
-			test = this.add_link(elm.getId(),this.selected.getId());
+	// A node is already selected 
+	if (this.selected !== false && this.selected.getName() == 'node') {		// selected node
+		if (this.selected.getId()==elm.getId()) {
 			this.unselect();
-		}
-		if (test !== false && test !== true) {
-			this.touch_line(linkLayer.get('#' + test)[0]);
 		} else {
-			this.select(elm);
+			// Are the two nodes already linked?
+			var test = this.test_link(elm.getId(),this.selected.getId());			// add_link between them. false=same, number=exist ,true=creates
+			// No, they are not linked. Add a link
+			if (test === false && this.draw.mode) { // no link
+				test = this.add_link(elm.getId(),this.selected.getId());
+				this.unselect();
+			}
+			// 
+			if (test !== false && test !== true) {
+				this.touch_line(linkLayer.get('#' + test)[0]);
+			} else {
+				this.select(elm);
+			}
 		}
 	} else { // select node
 		this.select(elm);
 	}
 };
 
+// Update the node based on weight
 this.update_node = function(nid, weight) {
 
-	if (this.nodes[nid].weight == weight) {
-		return;
-	}
+	if (this.nodes[nid].weight == weight) { return; }
 
+	// update data
 	this.nodes[nid].weight = weight;
+
+	// get the node
 	var node = nodeLayer.get('#' + nid)[0];
 	
+	// redraw the node
 	node.setRadius(14 + Math.abs(weight) * 1.5);
 	if (weight >= 0) {
 		node.setFill('gray');
@@ -345,12 +384,16 @@ this.update_node = function(nid, weight) {
 
 	nodeLayer.batchDraw();
 
+	// reavaluate 
 	this.evaluate();
 };
 
-// remove node
+// Remove node
 this.remove_node = function(nid) {
 
+	iselectrode = this.is_electrode(nid)
+
+	// console
 	console.log('remove ' + nid);
 
 	// delete links
@@ -359,26 +402,25 @@ this.remove_node = function(nid) {
 		self.remove_link(nodeLinks[i]);
 	}
 
-	// delete nods
+	// delete node from data structure
 	delete self.nodes[nid];
+
+	// remove node from layer
 	var node = nodeLayer.get('#' + nid)[0];
 	node.destroy();
+
 	// update layer
-
-	if (this.diag.mode) {
-		spectrum.diagonalize();
-	} else {
-		this.clearEigen();
-		spectrum.reset();
-	}
-
 	nodeLayer.batchDraw();
 
 	// reavaluate 
-	this.evaluate();
+	if (!iselectrode) {
+		this.evaluate();
+	}
 };
 
-// electrodes
+// SPECIAL NODES
+/////////////////////////////////////////////
+// Electodes
 this.add_electrodes = function() {
 
 	var h = stage.getHeight();
@@ -386,17 +428,19 @@ this.add_electrodes = function() {
 
 	this.add_node(0,h/2,10,{'electrode': true, 'draggable': false});
 	this.add_node(w,h/2,10,{'electrode': true, 'draggable': false});
+
+	console.log('Added electrodes')
 };
 
 this.get_electrodes = function() {
-	var remove = [];
+	var elec = [];
 	for (var n in this.nodes) {
 		if (!(this.nodes).hasOwnProperty(n)) { continue; }
 		if (this.nodes[n].options['electrode'] === true) {
-			remove.push(n);
+			elec.push(n);
 		}
 	}
-	return remove;
+	return elec;
 };
 
 this.remove_electrodes = function() {
@@ -414,8 +458,10 @@ this.is_electrode = function(n) {
 		return false;
 };
 
-// Links
-
+/////////////////////////////////////////////
+// LINKS
+/////////////////////////////////////////////
+// Test if there is a link between two nodes
 this.test_link = function(nid1,nid2) {
 
 	// same site selected: abort
@@ -433,7 +479,7 @@ this.test_link = function(nid1,nid2) {
 	return false;
 };
 
-// Add link function
+// Add a link between two nodes
 this.add_link = function(nid1,nid2,weight) {
 
 	// same site selected: abort
@@ -466,35 +512,39 @@ this.add_link = function(nid1,nid2,weight) {
 		evt.cancelBubble = true;
 	} );
 
+	// console
 	console.log('added ' + line.getId() + ' between ' + nid1 + ' and ' + nid2);
 
-	if (ilink === 0) { self.write(''); } // finish guide
+	// logic here?
+	if (ilink === 0) { self.write('Hover over the Eigenspectrum to show the orbitals'); } // finish guide 
 
 	linkLayer.add(line); // add line to layer
 	ilink++; // increment running index
 
-	// add to links object
+	// Add to links object
 	self.links[line.getId()] = {'nodes': [nid1, nid2], 'weight': -1};
 
-	// add to nodes object
+	// Add to nodes object
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
 	self.nodes[nid2].links[self.nodes[nid2].links.length] = line.getId();
 	
-	// dashed line if one is a electrode
+	// Draw a dashed line to electrodes
 	if (this.is_electrode(nid1) || this.is_electrode(nid2)) {
 		line.dash([20,10]);
-	}
+	} 
 
-	// redraw
+	// Redraw
 	linkLayer.batchDraw();
 
-	// evaluate
-	this.evaluate();
+	// Reevaluate if link is not to electodes
+	// if (!this.is_electrode(nid1) && !this.is_electrode(nid2)) {
+		this.evaluate();
+	// } 
 
 	return line.getId();
 };
 
-// touching link
+// Touching link
 this.touch_line = function(elm) {
 
 	if (this.selected !== false) {
@@ -510,6 +560,7 @@ this.touch_line = function(elm) {
 	}
 };
 
+// update link based on weight
 this.update_links = function(lids,weight) {
 	for(var i = 0; i < lids.length; i ++) {
 		this.update_link(lids[i],weight);
@@ -517,8 +568,7 @@ this.update_links = function(lids,weight) {
 	return;
 };
 
-
-// update the links
+// Update the links
 this.update_link = function(lid, weight) {
 
 	if (weight===undefined) { // update positions
@@ -550,7 +600,7 @@ this.update_link = function(lid, weight) {
 	linkLayer.batchDraw();
 };
 
-//remove link
+// Remove link
 this.remove_link = function(lid) {
 	// remove line
 	this.selected = false;
@@ -577,33 +627,41 @@ this.remove_link = function(lid) {
 
 	linkLayer.batchDraw();
 
+	// If we are not remove electrodes, then reevaluate
 	this.evaluate();
 };
 
-// collected function
+// UTILITY
+//////////////////////////////////////////////////
+// Add link or node
 this.add = function(subject,v1,v2,v3) {
 	if (subject == 'link') {
 		return this.add_link(v1,v2,v3);
 	}
 	return this.add_node(v1,v2,v3);
 };
-
+// Update link or node
 this.update = function(subject,id,weight) {
 	if (subject == 'link') {
 		return this.update_link(id,weight);
 	}
 	return this.update_node(id,weight);
 };
-
+// Select link or node
 this.select = function(elm) {
 
+	// Test that elm is selectable
 	if (this.selected!==false && this.selected.getId()==elm.getId()) {
 		return;
 	}
 
+	// Clear the eigenlayer
 	this.clearEigen();
 
+	// Unselect anything selected
 	this.unselect();
+
+	// Remember selected element
 	this.selected = elm;
 
 	this.selected.setStroke('#CC3333'); // select link graphically
@@ -641,24 +699,18 @@ this.unselect = function() {
 	// this.update(this.selected.getName(),this.selected);
 	this.selected = false;
 };
-
-this.clearEigen = function() {
-	spectrum.unselect();
-	eigenLayer.destroyChildren().draw();
-};
-
+// get object 
 this.get = function(subject,id) {
 	return (subject == 'link' ? this.links[id] : this.nodes[id]); 
 };
-
+// remove object
 this.remove = function(subject,id) {
 	if (subject == 'link') {
 		return this.remove_link(id);
 	}
 	return this.remove_node(id);
 };
-
-// reset
+// reset the stage 
 this.reset = function () {
 	eigenLayer.destroyChildren().draw();
 	linkLayer.destroyChildren().draw();
@@ -670,18 +722,27 @@ this.reset = function () {
 	this.links = {};
 	ilink = 0;
 	this.selected = false;
+	message = false;
 
 	this.draw.reset(); // reset counters
 	this.diag.reset(); // reset digaonlization
+	this.tran.reset(); // reset digaonlization
 
 	this.remove_electrodes();
-	$('#electrodes').html('Add Leads').attr('data-mode','add');
+	$('#electrodes').html('+ Leads').attr('data-mode','add');
 
 	self.write("Click the canvas to add nodes to your model.");
 };
 
-// eigen
+// EIGEN
+//////////////////////////////////////////////////
+// Clear the eigenlayer and update the spectrum
+this.clearEigen = function() {
+	spectrum.unselect();
+	eigenLayer.destroyChildren().draw();
+};
 
+// Draw the molecular orbitals
 this.drawMO = function(inodes,energy,orbital) {
 
 	// wipe the slate clean
@@ -702,6 +763,7 @@ this.drawMO = function(inodes,energy,orbital) {
 
 };
 
+// 
 this.drawMOweight = function(x,y,w) {
 	
 	var fill = 'blue';
@@ -718,6 +780,7 @@ this.drawMOweight = function(x,y,w) {
 	eigenLayer.add(weight);
 };
 
+// Evaluate our calculation
 this.evaluate = function() {
 	if (this.diag.mode) {
 		spectrum.diagonalize();
@@ -725,10 +788,18 @@ this.evaluate = function() {
 		this.clearEigen();
 		spectrum.reset();
 	}
+
+	if (this.tran.mode) {
+		transport.plot();
+	} else {
+		transport.reset();
+	}
+
 };
 
 // IO
-
+//////////////////////////////////////////////////
+// DUMP function 
 this.dump = function() {
 	var H = spectrum.hamiltonian(this);
 	var xy = [];
@@ -743,7 +814,7 @@ this.dump = function() {
 	console.log(json);
 	forceDownload('model.json',json);
 };
-
+// load a model
 this.load = function(H,xy) {
 
 	reset();
@@ -769,7 +840,7 @@ this.load = function(H,xy) {
 	spectrum.diagonalize();
 
 };
-
+// load from a file
 this.loadFromFile = function(model) {
 	console.log(model);
 	$.ajax({
@@ -786,7 +857,7 @@ this.loadFromFile = function(model) {
 		}
 	});
 };
-
+// upload from a file
 this.uploadFromFile = function(evt) {
 
     var files = evt.target.files; // FileList object
@@ -825,14 +896,16 @@ this.orbitals = [];
 this.selected = false;
 this.update = true;
 
-this.settings = {'adhocshift': 10};
+this.settings = {'adhocshift': 10}; // numerical trick
 
+// Create drawing stage
 var stage = new Kinetic.Stage({
 	container: container,
 	width: 250,
 	height: 180
 });
 
+// Add energy-layer and a control-layer
 var energyLayer = new Kinetic.Layer();
 var controlLayer = new Kinetic.Layer();
 
@@ -857,6 +930,8 @@ this.hamiltonian = function(model) {
 
 	var N = this.inodes.length;
 
+	if (N < 2) {return false;}
+
 	if (N === 0) {
 		return false;
 	}
@@ -870,6 +945,7 @@ this.hamiltonian = function(model) {
 	}
 
 	for (i = 0; i < N; i++) {
+		// console.log(i)
 		// onsite energies
 		H[i][i] = parseFloat(model.nodes[this.inodes[i]].weight) + spectrum.settings.adhocshift;
 
@@ -950,7 +1026,7 @@ this.diagonalize = function() {
 		}
 
 		var line = new Kinetic.Line({
-			points: [25, -i/(this.energies.length-1)*140 + 160 , 50, -this.energies[i]/scale*70+90, 130, -this.energies[i]/scale*70+90],
+			points: [25, -i/(this.energies.length-1)*140 + 160 , 50, -this.energies[i]/scale*70+90, 170, -this.energies[i]/scale*70+90],
 			stroke: strokeColor,
 			strokeWidth: 3
 		});
@@ -985,6 +1061,7 @@ this.diagonalize = function() {
 
 };
 
+// Draw up and down controls
 this.drawControls = function() {
 
 	if (controlLayer.getChildren().length > 0) {
@@ -993,8 +1070,8 @@ this.drawControls = function() {
 
 	var upObj = new Image();
 	var up = new Kinetic.Image({
-          x: 150,
-          y: 50,
+          x: 200,
+          y: 35,
           image: upObj,
           width: 32,
           height: 32
@@ -1007,8 +1084,8 @@ this.drawControls = function() {
 
 	var downObj = new Image();
 	var down = new Kinetic.Image({
-          x: 150,
-          y: 118,
+          x: 200,
+          y: 108,
           image: downObj,
           width: 32,
           height: 32
@@ -1093,11 +1170,15 @@ this.reset = function() {
 
 }
 
-
+// TRANSPORT calculation
+//////////////////////////////////////////////
 function Transport() {
 
 	this.plot = function() {
 		var res = [this.calculate()];
+
+		if (res === false) { return; }
+
 
 		var options = {
 			selection: {
@@ -1129,11 +1210,10 @@ function Transport() {
 			);
 		});
 	};
-
 	
 	this.calculate = function(xlim) {
 
-		if (spectrum.energies.length === 0) {
+		if (spectrum.energies.length > 1 ) {
 			spectrum.diagonalize();
 		}
 
@@ -1141,6 +1221,11 @@ function Transport() {
 			xlim = [Math.min.apply(null,spectrum.energies), Math.max.apply(null, spectrum.energies)]
 		}
 		var electrodes = model.get_electrodes();
+		if (electrodes.length < 2) { return false; }
+		if (model.nodes[electrodes[0]].links.length < 1 || model.nodes[electrodes[1]].links.length < 1) {
+			return false;
+		}
+
 		var omegas = numeric.linspace(xlim[0],xlim[1],600);
 		var res = this.resolvent(omegas,electrodes);
 
@@ -1152,6 +1237,7 @@ function Transport() {
 
 	this.resolvent = function (omegas,electrodes) {
 
+		// Get Hamiltonian
 		var H = spectrum.hamiltonian(model);
 
 		var inner = newFilledArray(spectrum.energies.length,0);
@@ -1188,7 +1274,10 @@ function Transport() {
 		return res;
 	};
 
-}
+	this.reset = function() {
+		$("#huckler_transport").html('');
+	}
+}	
 
 
 //  __  __ ___ ____   ____
@@ -1197,6 +1286,7 @@ function Transport() {
 // | |  | || | ___) | |___
 // |_|  |_|___|____/ \____|
 
+// A mode with a button
 function DrawMode(button, fcn) {
 	var self = this;
 
@@ -1230,12 +1320,13 @@ function DrawMode(button, fcn) {
 	};
 }
 
-//range
+// Numeric range (from, to, )
 function range(a,b,c,d){d=[];c=b-a+1;while(c--)d[c]=b--;return d;}
 
-//signum
+// Signum function
 function sign(x) { return x < 0 ? -1 : 1; }
 
+// Create a new array filled with values <val>
 function newFilledArray(length, val) {
     var array = [];
     for (var i = 0; i < length; i++) {
@@ -1244,8 +1335,7 @@ function newFilledArray(length, val) {
     return array;
 }
 
-
-// forcedownload
+// Force Download
 function forceDownload(filename, text) { // not working in ie.
     var pom = document.createElement('a');
     pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -1254,7 +1344,6 @@ function forceDownload(filename, text) { // not working in ie.
     pom.click();
     pom.remove();
 }
-
 
 
 
