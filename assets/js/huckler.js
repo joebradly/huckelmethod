@@ -330,7 +330,7 @@ this.add_node = function(x,y,weight,options)
 	if (ilink === 0) { self.write("Select two nodes to add a link between them."); }
 
 	// Select this node
-	if (!('electrode' in options)) {
+	if (!('electrode' in options) && !('load' in options)) {
 		self.touch_circle(node);
 	}
 
@@ -825,7 +825,7 @@ this.load = function(H,xy) {
 	console.log(xy);
 
 	for (var i = 0; i < (xy).length; i++) {
-		nodeNames[i] = this.add_node(xy[i][0], xy[i][1], H[i][i]);
+		nodeNames[i] = this.add_node(xy[i][0], xy[i][1], H[i][i], {'load': true});
 	}
 
 	for (i = 0; i < xy.length; i++) {
