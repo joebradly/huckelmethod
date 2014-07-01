@@ -37,8 +37,11 @@ function keydown(e) {
 		e.preventDefault();
     }
     if (e.keyCode==8) { // backspace
-		if (model.selected!==false && $(document.activeElement).attr('id')!='weight') {
+    	var isinput = $(document.activeElement).is('input');
+		if (model.selected!==false && !isinput) {
 			$('#delete').trigger('click');
+		}
+		if (!isinput) {
 			e.preventDefault();
 		}
     }
@@ -176,8 +179,8 @@ this.selected = false;  // which is selected? (link or node)
 // Setup drawing stage
 var stage = new Kinetic.Stage({
 	container: container,
-	width: 470,
-	height: 450
+	width: 520,
+	height: 405
 });
 
 // Add three drawing layers
@@ -307,12 +310,12 @@ this.add_node = function(x,y,weight,options)
 
 	// DELETE
 	// Delete if placed in lower bottom corner
-	node.on('dragend', function(evt) {
-		if ( (this.getY() > stage.getHeight() - 35) && (this.getX() > stage.getWidth() - 35 )) {
-			self.remove_node(this.getId());
-		}
-		document.body.style.cursor = 'default';
-	});
+	// node.on('dragend', function(evt) {
+	// 	if ( (this.getY() > stage.getHeight() - 35) && (this.getX() > stage.getWidth() - 35 )) {
+	// 		self.remove_node(this.getId());
+	// 	}
+	// 	document.body.style.cursor = 'default';
+	// });
 
 	// CLEAN UP
 	// Add to nodelayer and draw it
@@ -522,7 +525,7 @@ this.add_link = function(nid1,nid2,weight) {
 	ilink++; // increment running index
 
 	// Add to links object
-	self.links[line.getId()] = {'nodes': [nid1, nid2], 'weight': -1};
+	self.links[line.getId()] = {'nodes': [nid1, nid2], 'weight': weight};
 
 	// Add to nodes object
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
@@ -596,7 +599,6 @@ this.update_link = function(lid, weight) {
 
 		this.evaluate();
 	}
-
 	linkLayer.batchDraw();
 };
 
@@ -729,7 +731,7 @@ this.reset = function () {
 	this.tran.reset(); // reset digaonlization
 
 	this.remove_electrodes();
-	$('#electrodes').html('+ Leads').attr('data-mode','add');
+	$('#electrodes').html('<b>+</b> Leads').attr('data-mode','add');
 
 	self.write("Click the canvas to add nodes to your model.");
 };
@@ -781,8 +783,9 @@ this.drawMOweight = function(x,y,w) {
 };
 
 // Evaluate our calculation
-this.evaluate = function() {
+this.evaluate = function(loading) {
 	if (this.diag.mode) {
+		this.write('')
 		spectrum.diagonalize();
 	} else {
 		this.clearEigen();
@@ -795,27 +798,61 @@ this.evaluate = function() {
 		transport.reset();
 	}
 
-};
+	loading = typeof loading !== 'undefined' ? loading : false;
 
+	if (!loading) {
+		$('#modellink').html('');
+	}
+};
+// list connections to leads
+this.connections = function() {
+	// leads
+	var L = [];
+	var inodes = []; var els = []; 
+	for (var n in model.nodes) {
+		if (!(model.nodes).hasOwnProperty(n)) {
+			continue; //The current property is not a direct property of p
+		}
+		if (model.nodes[n].links.length > 0) {
+			inodes.push(n);
+		}
+		if (model.is_electrode(n)) {
+			els.push(n);
+			continue;
+		}
+	}
+	for (var j = 0; j < els.length; j++) { 
+		L[j] = [];
+		for (var l = 0; l < model.nodes[els[j]].links.length; l++) {
+			// this is the link
+			var l1 = model.nodes[els[j]].links[l]
+			// take the other node
+			var i1 = 0; if (model.links[l1].nodes[0]==els[j]) { i1 = 1; } 
+			// add our findings to a list
+			L[j].push([inodes.indexOf(model.links[l1].nodes[i1]), parseFloat(model.links[l1].weight)]);
+		}
+	}
+	return L;
+}
 // IO
 //////////////////////////////////////////////////
 // DUMP function 
 this.dump = function() {
 	var H = spectrum.hamiltonian(this);
+		if (H === false) { return false; }
 	var xy = [];
+	var L = model.connections();
 
 	for( var i = 0; i < spectrum.inodes.length; i ++) {
 		H[i][i] = H[i][i] - spectrum.settings.adhocshift;
 		xy[i] = [this.nodes[spectrum.inodes[i]].x, this.nodes[spectrum.inodes[i]].y];
 	}
+	var json = JSON.stringify({'H': H,'xy': xy,'L':L}, null, null);
 
-	var json = JSON.stringify({'H': H,'xy': xy}, null, null);
-
-	console.log(json);
-	forceDownload('model.json',json);
+	return json;
 };
 // load a model
-this.load = function(H,xy) {
+this.load = function(H,xy,L) {
 
 	reset();
 	spectrum.update = false;
@@ -828,53 +865,46 @@ this.load = function(H,xy) {
 		nodeNames[i] = this.add_node(xy[i][0], xy[i][1], H[i][i], {'load': true});
 	}
 
-	for (i = 0; i < xy.length; i++) {
+	for (var i = 0; i < xy.length; i++) {
 		for (var j = 0; j < i; j++) {
 			if ( H[i][j] !== 0 ) {
-				this.add_link(nodeNames[i], nodeNames[j], H[i][j]);
+				this.add_link(nodeNames[i], nodeNames[j], parseFloat(H[i][j]));
+			}
+		}
+	}
+
+	// if there is leads
+	if (L.length > 0) { 
+		model.add_electrodes();
+		$('#electrodes').html('<b>&ndash;</b> Leads');
+
+		els = model.get_electrodes();
+
+		for (var i = 0; i < 2; i++) {
+			
+			for (var j = 0; j < L[i].length; j++ ) {
+				console.log(L[i][j][1]);
+				model.add_link(els[i],nodeNames[L[i][j][0]], parseFloat(L[i][j][1]));
 			}
 		}
 	}
 
 	spectrum.update = true;
 	spectrum.diagonalize();
+	transport.plot();
+
+	this.tran.toggle();
+	this.diag.toggle();
 
 };
-// load from a file
-this.loadFromFile = function(model) {
-	console.log(model);
-	$.ajax({
-		dataType: "json",
-		url: "./models/" + model + ".json",
-		async: false,
-		success: function (model){
-			console.log('file loaded');
-			self.load(model.H, model.xy);
-		},
-		error: function (response) {
-			console.log('file error');
-			console.log(response);
-		}
-	});
-};
-// upload from a file
-this.uploadFromFile = function(evt) {
 
-    var files = evt.target.files; // FileList object
-    f = files[0];
-
-    var reader = new FileReader();
-
-	// Closure to capture the file information.
-	reader.onload = (function(theFile) {
-	return function(e) {
-		var model = $.parseJSON(e.target.result);
-		self.load(model.H,model.xy);
-	};
-	})(f);
-
-    // Read in the image file as a data URL.
-    reader.readAsText(f);
+this.loadFromString = function(str) {
+	try {
+		var model = $.parseJSON(str);
+		return self.load(model.H,model.xy,model.L);
+	} catch(err) {
+		return;
+	}	
 };
 
 }
@@ -1070,13 +1100,13 @@ this.drawControls = function() {
 
 	var upObj = new Image();
 	var up = new Kinetic.Image({
-          x: 200,
-          y: 35,
+          x: 180,
+          y: 20,
           image: upObj,
-          width: 32,
-          height: 32
+          width: 60,
+          height: 60
     });
-    upObj.src = './assets/img/up.png';
+    upObj.src = './assets/img/interface-02.png';
 
     up.on('touchstart mousedown',function(){
 		self.selectNext(+1);
@@ -1084,13 +1114,13 @@ this.drawControls = function() {
 
 	var downObj = new Image();
 	var down = new Kinetic.Image({
-          x: 200,
-          y: 108,
+          x: 180,
+          y: 98,
           image: downObj,
-          width: 32,
-          height: 32
+          width: 60,
+          height: 60
     });
-    downObj.src = './assets/img/down.png';
+    downObj.src = './assets/img/interface-01.png';
 
     down.on('touchstart mousedown',function(){
 		self.selectNext(-1);
@@ -1335,19 +1365,71 @@ function newFilledArray(length, val) {
     return array;
 }
 
-// Force Download
-function forceDownload(filename, text) { // not working in ie.
-    var pom = document.createElement('a');
-    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    pom.setAttribute('download', filename);
-    $('body').append(pom);
-    pom.click();
-    pom.remove();
+// Hamiltonian
+function zeros(N,M) {
+	var H = [];
+	for(var i=0; i<N; i++) {
+		H[i] = [];
+		for(var j=0; j<M; j++) {
+			H[i][j] = 0.0;
+		}
+	}
+	return H;
 }
 
+function ring(N) {
 
+	// hamiltonian
+	var H = zeros(N,N);
+	for(var i=0; i<N; i++) {
+		H[i][(i+1) % N] = -1;
+		H[(i+1)%N][i] = -1;
+	}
 
+	// xy
+	var w = 520.0; var h = 405.0;
+	var xy = []; 
+	var fN = parseFloat(N);
+	var R = w/6.0 + 2*fN;
+	for (var i=0; i<N; i++) {
+		xy[i] = [Math.round(w/2.0 + R*Math.cos(i*2.0*Math.PI/fN)), Math.round(h/2.0 + R*Math.sin(i*2.0*Math.PI/fN))];
+	}
 
+	// Leads
+	var L = [];
 
+	var json =  JSON.stringify({'H': H,'xy': xy,'L':L}, null, null);
+	return json;
+}
 
+function chain(N, d) {
+	
+	if (isNaN(d)) { d = -1; }
 
+	var H = zeros(N,N);
+	for (var i=0; i< N-1; i++) {
+		if (i % 2 == 0) {
+			H[i][i+1] = -d;
+			H[i+1][i] = -d;
+		} else {
+			H[i][i+1] = -1;
+			H[i+1][i] = -1;
+		}
+	}
+
+	// xy
+	var w = 520.0; var h = 405.0;
+	var xy = []; 
+	var fN = parseFloat(N);
+	for (var i=0; i<N; i++) {
+		var dy = -25; if (i % 2 == 0) { dy = -dy; }
+		var dx = 10/fN + w/5.8 - 4.3*fN;
+		xy[i] = [Math.round(w/2.0 +dx/2 + dx*(i-N/2)), Math.round(h/2 + dy)];
+	}
+
+	// Leads
+	var L = [];
+
+	var json =  JSON.stringify({'H': H,'xy': xy,'L':L}, null, null);
+	return json;
+}

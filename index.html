@@ -43,7 +43,7 @@
 <div id="huckler">
 <div class="huckler_controls">
 	<div>
-	Edit Model <a id="drawmode" class="button">OFF</a>
+	Draw Model <a id="drawmode" class="button">OFF</a>
 	-
 	<a id="clear" class="button">Clear Model</a>
 	</div>
@@ -57,17 +57,69 @@
 </div>
 <div class="spectrum_controls">
 	<div>
-	Continous <a id="diagonalize" class="button">Evaluation<a/> <a id="diagmode" class="button">OFF</a>
+	 <a id="diagonalize" class="button">Eigenspectrum<a/> <a id="diagmode" class="button">OFF</a>
 	</div>
 </div>
 </div>
 
 <div id="controls">
-	<p><a id="export" class="button">Save Model</a> (dosen't work in IE)</p>
+	<a id="export" class="button">Share Model</a>
+	<div id ="modellink"></div>
 </div>
 </div>
 
-<script defer="defer" src="assets/js/huckler.js"></script>
+<div id="examples">
+	<p><b>Rings</b> (Annulenes)</p>
+	Length:
+	<form id="rings">
+	<select name="N">
+		<option>3</option>
+		<option>4</option>
+		<option>5</option>
+		<option>6</option>
+		<option>7</option>
+		<option>8</option>
+		<option>9</option>
+		<option>10</option>
+		<option>11</option>
+		<option>12</option>
+		<option>13</option>
+		<option>14</option>
+		<option>15</option>
+		<option>16</option>
+	</select>
+	<input type="submit" value="Load"/>
+	</form>
+	
+	<br/>
+	<p><b>Chains</b></p>
+	Length: 
+	<form name="chains" id="chains" method="get">
+	<select name="N">
+		<option>3</option>
+		<option>4</option>
+		<option>5</option>
+		<option>6</option>
+		<option>7</option>
+		<option>8</option>
+		<option>9</option>
+		<option>10</option>
+		<option>11</option>
+		<option>12</option>
+		<option>13</option>
+		<option>14</option>
+		<option>15</option>
+		<option>16</option>
+	</select>, 
+	Dimerization: 
+	<input class="d" type="text" name="d" value="1" size="2"/>
+	<input type="submit" value="Load"/>
+	</form>
+
+	</div>
+</div>
+
+<script defer="defer" src="assets/js/huckler.min.js"></script>
 
 <script type="text/javascript">
 $(function() {
@@ -91,11 +143,11 @@ $(function() {
 
 		if (button.attr('data-mode')=='add') {
 			model.add_electrodes();
-			$(this).html('&ndash; Leads');
+			$(this).html('<b>&ndash;</b> Leads');
 			button.attr('data-mode','remove');
 		} else {
 			model.remove_electrodes();
-			$(this).html('+ Leads')
+			$(this).html('<b>+</b> Leads')
 			button.attr('data-mode','add');
 		}		
 	});
@@ -107,37 +159,84 @@ $(function() {
 	$('#diagonalize').on('click',function() {
 		spectrum.diagonalize();
 	});
+});
+
+$(function() {
+
+	var _doreload = true;
 	$('#export').on('click',function() {
-		model.dump();
+		var json = model.dump();
+		if (json===false) { return; }
+		_doreload = false; 
+		window.location.hash = json;
+		var url = 'http://huckelmethod.com/index.html#' + json;
+		$('#modellink').html('waiting...');
+		getShortUrl(url,loadShortUrl);
 	});
 
-	var models = [];
-	models.push({'file':'ring3', 'name': 'Ring[3]'});
-	models.push({'file':'ring4', 'name': 'Ring[4]'});
-	models.push({'file':'ring5', 'name': 'Ring[5]'});
-	models.push({'file':'ring6', 'name': 'Ring[6]'});
-	models.push({'file':'quinone', 'name': 'Quinone(8)'});
-	models.push({'file':'azulene', 'name': 'Azulene'});
-	models.push({'file':'graphene', 'name': 'Graphene'});
-
-	var model_selector = $('<select id="model"/>');
-	model_selector.append($('<option value="' + false + '">(select)</option>'));
-	for (var i = 0; i < models.length; i++) {
-		model_selector.append($('<option value="' + models[i].file + '">'+ models[i].name +'</option>'));
+	function loadShortUrl(href) {
+		var copy = $('<input type="text" />').val(href);
+		var link = $('<a>Link</a>').attr('href',href);
+		$('#modellink').html(link.add(copy));
 	}
-	model_selector.on('change',function(){ 
-		console.log('file clicked');
-		if (model_selector.val()!='false') {
-			model.loadFromFile(model_selector.val());
+
+	// load from hash functionality
+	function loadfromhash() {
+		var hash = location.href.substr(location.href.indexOf('#')+1);
+		var json = model.loadFromString(hash);
+	}
+
+	$(window).on('hashchange', function() {
+		if (_doreload === true) {
+			loadfromhash();
 		}
-		model_selector.blur();
-	})
+		_doreload = true;
+	});
 
-	var upload = $('<input type="file" id="files" name="files"/>');
-	upload.on('change',model.uploadFromFile);
+	loadfromhash();
 
-	$('#controls').append($('<p></p>').append('Load ').append(model_selector).append(' or upload ').append(upload));
+	function getShortUrl(href, callback)
+	{
+	   var url = 'http://is.gd/create.php?format=json&url=' + encodeURIComponent(href);
+	   var jqxhr  = $.getJSON(
+	        url,
+	        {},
+	        function(response)
+	        {
+	        	if (response.hasOwnProperty('shorturl') && callback) {
+	                callback(response.shorturl);
+	            } else if(callback) {
+	            	callback(href);
+	            }
+	        }
+	    )
+	    .fail(function() {
+    		callback(href);
+  		});
+
+	};
 });
+
+$(function() {
+
+	var form = $('form#rings');
+	form.submit(function(e){
+		e.preventDefault();
+		var N = $( "select", this ).val();
+		var hash = ring(N);
+		window.location.hash = hash;
+	});
+
+	var form = $('form#chains');
+	form.submit(function(e){
+		e.preventDefault();
+		var N = $( "select", this ).val();
+		var d = parseFloat( $( "input[name=d]", this ).val());
+		var hash = chain(N,d);
+		window.location.hash = hash;
+	});
+});
+
 </script>
 
 </body>
