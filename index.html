@@ -1,30 +1,38 @@
 <html lang="en" manifest="huckler.manifest">
 <head>
-<base href="http://huckelmethod.com/" /> <!-- remove before production -->
+<!-- <base href="http://huckelmethod.com/" /> <!-- remove before production --> 
 <title>huckelmethod.com</title>
 <meta http-equiv="content-type" content="text/html;charset=UTF-8"> 
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<meta name="description" content="Draw and solve Hückel models directly in your browser.">
+<meta name="description" content="Draw and solve Hückel (tight-binding) models directly in your browser.">
 <meta name="distribution" content="web">
 <meta name="keyword" content="huckel, hückel, chemistry, pi system, diagonalization, huckel method, molecular, orbital, MO, HOMO, LUMO">
 <!-- Open Graph -->
 <meta property="og:title" content="Hückel Method">
-<meta property="og:image" content="http://huckelmethod.com/assets/img/posterboy.jpg">
 <meta property="og:url" content="http://huckelmethod.com">
-<meta property="og:site_name" content="HückelMethod.com">
+<meta property="og:site_name" content="huckelmethod.com">
+<meta property="og:image" content="http://huckelmethod.com/assets/icon/huckelmethod.jpg"/>
 <!-- Web App -->
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="57x57" href="assets/icon/apple-touch-icon-57x57.png" />
+<link rel="apple-touch-icon" sizes="72x72" href="assets/icon/apple-touch-icon-72x72.png" />
+<link rel="apple-touch-icon" sizes="76x76" href="assets/icon/apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" sizes="114x114" href="assets/icon/apple-touch-icon-114x114.png" />
+<link rel="apple-touch-icon" sizes="120x120" href="assets/icon/apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" sizes="144x144" href="assets/icon/apple-touch-icon-144x144.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="assets/icon/apple-touch-icon-152x152.png" />
 <!-- Links and Scripts -->
 <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min
 .js"></script> -->
-<script src="http://huckelmethod.com/assets/js/jquery-1.10.2.min.js"></script>
-<!-- <script src="assets/js/kinetic-v4.7.4.min.js"></script> -->
-<script src="http://huckelmethod.com/assets/js/kinetic-v5.0.0.min.js"></script>
-<script src="http://huckelmethod.com/assets/js/numeric-1.2.6.js"></script>
-<script src="http://huckelmethod.com/assets/js/jquery.flot.min.js"></script>
-<script src="http://huckelmethod.com/assets/js/jquery.flot.selection.min.js"></script>
+<script src="assets/js/jquery-1.10.2.min.js"></script>
+<script src="assets/js/kinetic-v5.0.0.min.js"></script>
+<script src="assets/js/numeric-1.2.6.js"></script>
+<script src="assets/js/jquery.flot.min.js"></script>
+<script src="assets/js/jquery.flot.selection.min.js"></script>
 <link href="assets/css/huckler.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
@@ -116,10 +124,16 @@
 	<input type="submit" value="Load"/>
 	</form>
 
+	<p><b>Misc</b></p>
+
+	<a href='index.html#{"H":[[0,-1,0,0,0,-1,0,0,0,0,0,0,0,0],[-1,0,-1,0,0,0,0,0,0,0,0,0,0,0],[0,-1,0,-1,0,0,0,0,0,0,0,0,0,0],[0,0,-1,0,-1,0,0,0,0,0,0,0,0,0],[0,0,0,-1,0,-1,-1,0,0,0,0,0,0,0],[-1,0,0,0,-1,0,0,0,0,0,0,0,0,0],[0,0,0,0,-1,0,0,-1,0,0,0,0,0,0],[0,0,0,0,0,0,-1,0,-1,0,0,0,0,0],[0,0,0,0,0,0,0,-1,0,-1,0,0,0,-1],[0,0,0,0,0,0,0,0,-1,0,-1,0,0,0],[0,0,0,0,0,0,0,0,0,-1,0,-1,0,0],[0,0,0,0,0,0,0,0,0,0,-1,0,-1,0],[0,0,0,0,0,0,0,0,0,0,0,-1,0,-1],[0,0,0,0,0,0,0,0,-1,0,0,0,-1,0]],"xy":[[106,189],[76,242],[107,294],[168,294],[199,242],[166,189],[257,241],[279,187],[333,187],[367,131],[425,130],[455,186],[425,241],[365,240]],"L":[]}'>Stilbene</a>, 
+	<a href='index.html?#{"H":[[0,-1,0,0,-1,0,0,0,0,0],[-1,0,-1,0,0,0,0,0,0,0],[0,-1,0,-1,0,0,0,0,0,-1],[0,0,-1,0,-1,-1,0,0,0,0],[-1,0,0,-1,0,0,0,0,0,0],[0,0,0,-1,0,0,-1,0,0,0],[0,0,0,0,0,-1,0,-1,0,0],[0,0,0,0,0,0,-1,0,-1,0],[0,0,0,0,0,0,0,-1,0,-1],[0,0,-1,0,0,0,0,0,-1,0]],"xy":[[294,100],[228,110],[217,175],[276,204],[327,160],[294,270],[252,320],[182,318],[141,262],[157,201]],"L":[]}'>Azulene</a>, 
+	<a href='index.html?#{"H":[[0,-1,0,0,-1,0,0,0],[-1,0,-1,0,0,0,0,0],[0,-1,0,-1,0,-1,0,0],[0,0,-1,0,-1,0,0,-1],[-1,0,0,-1,0,0,0,0],[0,0,-1,0,0,0,-1,0],[0,0,0,0,0,-1,0,-1],[0,0,0,-1,0,0,-1,0]],"xy":[[192,88],[182,150],[230,186],[280,151],[261,91],[248,243],[315,250],[328,187]],"L":[]}'>Pentalene</a>, 
+	<a href='index.html#{"H":[[0,-1,0,0,0,-1,0,0],[-1,0,-1,0,0,0,0,0],[0,-1,0,-1,0,0,0,0],[0,0,-1,0,-1,0,0,0],[0,0,0,-1,0,-1,0,0],[-1,0,0,0,-1,0,-1,0],[0,0,0,0,0,-1,0,-1],[0,0,0,0,0,0,-1,0]],"xy":[[209,204],[234,249],[287,250],[310,204],[286,161],[234,161],[211,117],[241,79]],"L":[]}'>Styrene</a>.
 	</div>
 </div>
 
-<script defer="defer" src="assets/js/huckler.min.js"></script>
+<script defer="defer" src="assets/js/huckler.js"></script>
 
 <script type="text/javascript">
 $(function() {

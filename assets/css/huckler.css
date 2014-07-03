@@ -218,6 +218,41 @@ p i {
 	background-color:#f8f8f8;
 }
 
+.huckler_transport h3 {
+	position: absolute;
+	top: 10px;
+	margin: 0;
+	padding: 0;
+	width: 250px;
+	font-size: 9pt;
+	text-align: center;
+	font-weight: normal;
+}
+
+#transport_plot {
+	width: 234px;
+	height: 180px;
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 3px;
+}
+
+.huckler_transport span {
+	display: block;
+	font-size: 10pt;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	font-weight: normal;
+	position: absolute;
+	bottom: 3px;
+	right: 4px;
+	width: 32px;
+	background-color: #f8f8f8;
+	z-index: 10;
+}
+
 /* Misc */
 
 #controls {

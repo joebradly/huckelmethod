@@ -1,11 +1,13 @@
 // Huckler 0.2
 // by Kim Georg Lind Pedersen
 
+
 $('#huckler')
 	.append($('<div id="huckler_model"  class="huckler_model"></div>'))
 	.append($('<div id="huckler_editor" class="huckler_editor"></div>'))
 	.append($('<div id="huckler_spectrum" class="huckler_spectrum"></div>'))
-	.append($('<div id="huckler_transport" class="huckler_transport"></div>'));
+	.append($('<div id="huckler_transport" class="huckler_transport"></div>'))
+
 
 var model = new Model('huckler_model');
 model.write("Click the canvas to add nodes to your model.");
@@ -859,8 +861,6 @@ this.load = function(H,xy,L) {
 
 	var nodeNames = [];
 
-	console.log(xy);
-
 	for (var i = 0; i < (xy).length; i++) {
 		nodeNames[i] = this.add_node(xy[i][0], xy[i][1], H[i][i], {'load': true});
 	}
@@ -883,7 +883,6 @@ this.load = function(H,xy,L) {
 		for (var i = 0; i < 2; i++) {
 			
 			for (var j = 0; j < L[i].length; j++ ) {
-				console.log(L[i][j][1]);
 				model.add_link(els[i],nodeNames[L[i][j][0]], parseFloat(L[i][j][1]));
 			}
 		}
@@ -1163,8 +1162,8 @@ this.selectNext = function(diff) {
 		}
 	}
 
-	console.log(self.energies);
-	console.log('eigen' + j);
+	// console.log(self.energies);
+	// console.log('eigen' + j);
 
 	self.unselect();
 	self.select(energyLayer.get('#E' + j)[0],j);
@@ -1209,6 +1208,12 @@ function Transport() {
 
 		if (res === false) { return; }
 
+		if ($('#huckler_transport h3').length == 0) {
+			$('#huckler_transport')
+				.append($('<h3></h3>').html('log[ (E &ndash; H)<sup>-2</sup> ]'))
+				.append($('<div id="transport_plot"></div'))
+				.append($('<span>E</span>'));
+		}
 
 		var options = {
 			selection: {
@@ -1216,7 +1221,8 @@ function Transport() {
 			}
 		};
 
-		var plot = $.plot("#huckler_transport",res,options);
+		var plot = $.plot("#transport_plot",res,options);
+
 
 		$("#huckler_transport").bind("plotselected", function (event, ranges) {
 
@@ -1232,7 +1238,7 @@ function Transport() {
 
 			// do the zooming
 
-			var plot = $.plot("#huckler_transport", res,
+			var plot = $.plot("#transport_plot", res,
 				$.extend(true, {}, options, {
 					xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
 					yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
@@ -1259,8 +1265,8 @@ function Transport() {
 		var omegas = numeric.linspace(xlim[0],xlim[1],600);
 		var res = this.resolvent(omegas,electrodes);
 
-		console.log(omegas);
-		console.log(res);
+		// console.log(omegas);
+		// console.log(res);
 
 		return numeric.transpose([omegas, res]);
 	};
@@ -1323,7 +1329,6 @@ function DrawMode(button, fcn) {
 	this.mode = false;
 	this.button = button.click(function() {
 		self.toggle();
-		console.log(fcn);
 		if (fcn !== undefined) {
 			fcn();
 		}
