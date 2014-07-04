@@ -10,7 +10,7 @@ $('#huckler')
 
 
 var model = new Model('huckler_model');
-model.write("Click the canvas to add nodes to your model.");
+model.write("Tap this canvas to draw your model.",2);
 var editor = new Editor('huckler_editor');
 var spectrum = new Spectrum('huckler_spectrum');
 var transport = new Transport('huckler_transport');
@@ -169,6 +169,7 @@ this.links = {}; // list of all links
 var ilink = 0;   // running index
 
 var message = false;  // current message
+var guide = true;
 
 this.draw = new DrawMode($('#drawmode'));  // are we drawing?
 this.diag = new DrawMode($('#diagmode'));  // are we diagonalizing?
@@ -214,7 +215,11 @@ stage.getContainer().addEventListener('mousedown', function (e) {
 });
 
 // Function for writing message to the linkLayer
-this.write = function(text) {
+this.write = function(text, size) {
+
+	console.log('huh:')
+	console.log(text)
+	if (size==undefined) { size = 1; }
 
 	if (message === false) {
 		if (text !== undefined) {
@@ -222,9 +227,10 @@ this.write = function(text) {
 				x: 10,
 				y: 10,
 				text: text,
-				fontSize: 16,
+				fontSize: 12+4*size,
+				fontStyle: 'bold',
 				fontFamily: 'Arial',
-				fill: 'gray'
+				fill: '#444444'
 			});
 			linkLayer.add(message);
 		}
@@ -233,7 +239,7 @@ this.write = function(text) {
 			message.destroy();
 			message = false;
 		} else {
-			message.setText(text);
+			message.fontSize(12+4*size).setText(text)
 		}
 	}
 
@@ -490,9 +496,8 @@ this.add_link = function(nid1,nid2,weight) {
 	// same site selected: abort
 	if (nid1 == nid2) { return true; }
 
-	if (this.test_link(nid1,nid2)) {
-		return;
-	}
+	// link already exists
+	if (this.test_link(nid1,nid2)) { return; }
 
 	// strokeColor
 	var strokeColor = 'black';
@@ -520,8 +525,8 @@ this.add_link = function(nid1,nid2,weight) {
 	// console
 	console.log('added ' + line.getId() + ' between ' + nid1 + ' and ' + nid2);
 
-	// logic here?
-	if (ilink === 0) { self.write('Hover over the Eigenspectrum to show the orbitals'); } // finish guide 
+	// guide text
+	if (ilink == 0) { self.write('Tap the Eigenspectrum to show the orbitals'); } // finish guide 
 
 	linkLayer.add(line); // add line to layer
 	ilink++; // increment running index
@@ -541,10 +546,8 @@ this.add_link = function(nid1,nid2,weight) {
 	// Redraw
 	linkLayer.batchDraw();
 
-	// Reevaluate if link is not to electodes
-	// if (!this.is_electrode(nid1) && !this.is_electrode(nid2)) {
-		this.evaluate();
-	// } 
+	// Reevaluate
+	this.evaluate();
 
 	return line.getId();
 };
@@ -727,6 +730,7 @@ this.reset = function () {
 	ilink = 0;
 	this.selected = false;
 	message = false;
+	guide = true;
 
 	this.draw.reset(); // reset counters
 	this.diag.reset(); // reset digaonlization
@@ -735,7 +739,7 @@ this.reset = function () {
 	this.remove_electrodes();
 	$('#electrodes').html('<b>+</b> Leads').attr('data-mode','add');
 
-	self.write("Click the canvas to add nodes to your model.");
+	self.write("Tap this canvas to draw your model.",2);
 };
 
 // EIGEN
@@ -761,6 +765,7 @@ this.drawMO = function(inodes,energy,orbital) {
 		this.drawMOweight(node.x,node.y,sgn*orbital[j]);
 	}
 
+	guide = false;
 	this.write('Energy: ' + Math.round(energy*1000)/1000);
 
 	eigenLayer.batchDraw();
@@ -787,7 +792,7 @@ this.drawMOweight = function(x,y,w) {
 // Evaluate our calculation
 this.evaluate = function(loading) {
 	if (this.diag.mode) {
-		this.write('')
+		if (guide===false) { this.write(''); } 
 		spectrum.diagonalize();
 	} else {
 		this.clearEigen();
