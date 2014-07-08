@@ -2,6 +2,22 @@
 // by Kim Georg Lind Pedersen
 
 
+//pixelratio fix
+_ref = ["HitCanvas", "SceneCanvas", "Canvas"];
+for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+  className = _ref[_i];
+  Kinetic[className].prototype.init = (function(p_method) {
+    return function(p_config) {
+      if (p_config == null) {
+        p_config = {};
+      }
+      p_config.pixelRatio = 2;
+      return p_method.call(this, p_config);
+    };
+  })(Kinetic[className].prototype.init);
+}
+
+// set us up.
 $('#huckler')
 	.append($('<div id="huckler_model"  class="huckler_model"></div>'))
 	.append($('<div id="huckler_editor" class="huckler_editor"></div>'))
@@ -96,16 +112,16 @@ this.edit = function(subject,id) {
 	this.reset();
 
 	// build html
-	var slider = $('<input type=range min=' + this.setup[subject].range[0] + ' max=' + this.setup[subject].range[1] + ' value=' + model.get(subject,id).weight + ' step=0.05 list="weight_list" />');
+	var slider = $('<input type=range min=' + this.setup[subject].range[0] + ' max=' + this.setup[subject].range[1] + ' value=' + model.get(subject,id).weight + ' step="0.05"/>');
 
 	var datalist = $('<datalist id="weight_list"></datalist>');
-	for(var i = this.setup[subject].range[0]; i <= this.setup[subject].range[1]; i++) {
-		datalist.append($('<option>' + i + '</option>'));
+	for(var i = this.setup[subject].range[0]*10; i <= this.setup[subject].range[1]*10; i++) {
+		datalist.append($('<option>' + i/10 + '</option>'));
 	}
 
 	// var slider = $('<input type="text" data-editor="' + id + '"/>');
 	var input = $("<input id='weight' type='text' size=6 value='" + model.get(subject,id).weight + "'/>");
-	var remove = $('<a id="delete" class="button" data-editor="' + id + '"> Delete<a/>');
+	var remove = $('<a id="delete" class="button" data-editor="' + id + '">Delete<a/>');
 
 	this.container
 		.append(
@@ -122,7 +138,7 @@ this.edit = function(subject,id) {
 		.on('input change', function (event) {
 		
 			data = $(this).val();
-			if ( Math.abs(input.val() - data) > 0.01)
+			if ( Math.abs(input.val() - data) >= 0.05)
 			{
 				input.val(data);
 			}
@@ -135,7 +151,8 @@ this.edit = function(subject,id) {
 	input.bind("input paste", function(event){
 		if ($.isNumeric($(this).val())) {
 			// console.log($(this).val());
-			slider.val(parseFloat($(this).val())).trigger('input');
+			val = Math.round(parseFloat($(this).val())*20)/20;
+			slider.val(val).trigger('input');
 		}
 	});
 
@@ -197,27 +214,33 @@ stage.add(nodeLayer);
 stage.add(eigenLayer);
 
 // Listen for clicks
-stage.getContainer().addEventListener('mousedown', function (e) {
-	// clear eigenlayer and update message
-	self.clearEigen();
+stage.on('contentMousedown', function (e) {
+	if (e.evt.cancelBubble===false)
+	{
+		// clear eigenlayer and update message
+		self.clearEigen();
 
-	// Are we drawing or selecting?
-	if (self.draw.mode) 
-	{   
-		// we are drawing -> add node
-		self.add_node(e.offsetX | e.layerX, e.offsetY | e.layerY);
-	} 
-	else if (self.selected !== false) 
-	{ 
-		// we are selecting -> deselect node
-		self.unselect();
+		// console.log(e)
+
+		// Are we drawing or selecting?
+		if (self.draw.mode) 
+		{   
+			console.log('contentMouse');
+			// we are drawing -> add node
+			self.add_node(e.evt.offsetX | e.evt.layerX, e.evt.offsetY | e.evt.layerY);
+			
+		} 
+		else if (self.selected !== false) 
+		{ 
+			// we are selecting -> deselect node
+			self.unselect();
+		}
 	}
 });
 
 // Function for writing message to the linkLayer
 this.write = function(text, size) {
 
-	console.log('huh:')
 	console.log(text)
 	if (size==undefined) { size = 1; }
 
@@ -296,20 +319,22 @@ this.add_node = function(x,y,weight,options)
 	// SELECTING
 	/////////////////////////////////////////////
 	// selecting the node
-	node.on('mousedown touchstart', function(evt) {
+	node.on('mousedown touchstart', function(e) {
 		self.touch_circle(this);
-		evt.cancelBubble = true;  // no bubbling
+		e.evt.cancelBubble = true;  // no bubbling
 	});
 
 	// DRAG
 	// Don't link when dragging
-	node.on('dragstart', function() {
-		self.unselect(this);
+	node.on('dragstart', function(e) {
+		self.select(this);
 		document.body.style.cursor = 'pointer';
+		e.evt.cancelBubble = true;
 	});
 
 	// Update nodes when dragged
-	node.on('dragmove', function(){
+	node.on('dragmove', function(e){
+		e.evt.cancelBubble = true;
 		self.nodes[this.getId()].x = this.getX();
 		self.nodes[this.getId()].y = this.getY();
 		self.update_links(self.nodes[this.getId()].links);
@@ -517,9 +542,9 @@ this.add_link = function(nid1,nid2,weight) {
 		id: 'link' + ilink
 	});
 
-	line.on('mousedown touchstart', function(evt) {
+	line.on('mousedown touchstart', function(e) {
 		self.touch_line(this);
-		evt.cancelBubble = true;
+		e.evt.cancelBubble = true;
 	} );
 
 	// console
@@ -1254,6 +1279,14 @@ function Transport() {
 	
 	this.calculate = function(xlim) {
 
+		// Is there electrodes
+		var electrodes = model.get_electrodes();
+		if (electrodes.length < 2) { return false; }
+		if (model.nodes[electrodes[0]].links.length < 1 || model.nodes[electrodes[1]].links.length < 1) {
+			return false;
+		}
+
+		// Is there nodes?
 		if (spectrum.energies.length > 1 ) {
 			spectrum.diagonalize();
 		}
@@ -1261,12 +1294,7 @@ function Transport() {
 		if (xlim === undefined) {
 			xlim = [Math.min.apply(null,spectrum.energies), Math.max.apply(null, spectrum.energies)]
 		}
-		var electrodes = model.get_electrodes();
-		if (electrodes.length < 2) { return false; }
-		if (model.nodes[electrodes[0]].links.length < 1 || model.nodes[electrodes[1]].links.length < 1) {
-			return false;
-		}
-
+		
 		var omegas = numeric.linspace(xlim[0],xlim[1],600);
 		var res = this.resolvent(omegas,electrodes);
 

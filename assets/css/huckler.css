@@ -56,21 +56,25 @@ h1 {
 	vertical-align: middle
 }
 
-.feedback{
-	position: absolute;
-	top: 0;
-	right: 30px;
-	display: inline-block;
-	padding: 10px;
-	font-weight: bold;
-	font-size: 13pt;
-	color: white;
-	text-decoration: none;
-	background-color: #44bb44;
-}
+.feedback {display: none;}
 
-.feedback:hover {
-	background-color:  #00aa00;
+@media only screen and (min-width: 768px) {
+	.feedback{
+		position: absolute;
+		top: 0;
+		right: 30px;
+		display: inline-block;
+		padding: 10px;
+		font-weight: bold;
+		font-size: 13pt;
+		color: white;
+		text-decoration: none;
+		background-color: #44bb44;
+	}
+
+	.feedback:hover {
+		background-color:  #00aa00;
+	}
 }
 
 .body {
@@ -179,9 +183,9 @@ p i {
 .huckler_editor input[type=text] {
 	font-family: Courier;
 	border: 1px solid #e5e5e5;
-	font-size: 12pt;
+	font-size: 11pt;
 	padding: 2px;
-	width: 45px;
+	width: 55px;
 	text-align: right;
 
 }
@@ -294,21 +298,23 @@ p i {
 
 /* Examples */
 
-#examples {
+.examples {
 	float: left;
 	font-size: 11pt;
 	width: 300px;
+	padding: 10px 15px 20px;
 }
 
-#examples p {
-	margin-bottom: .4em;
+.examples p {
+	margin: 0em 0px .2em;
 }
 
-#examples form {
+.examples form {
 	display: inline-block;
+	margin: 0 0 10px;
 }
 
-#examples select, #examples input {
+.examples select, .examples input {
 	display: inline-block;
 }
 /* Icons */
