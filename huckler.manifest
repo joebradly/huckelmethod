@@ -1,11 +1,11 @@
 CACHE MANIFEST
-#rev 4
+#rev 5
 /index.html
 /about.html
 /details.html
 /favicon.ico
 /assets/js/jquery-1.10.2.min.js
-/assets/js/kinetic-v5.0.0.min.js
+/assets/js/kinetic-v5.1.0.min.js
 /assets/js/numeric-1.2.6.js
 /assets/js/jquery.flot.min.js
 /assets/js/jquery.flot.selection.min.js
