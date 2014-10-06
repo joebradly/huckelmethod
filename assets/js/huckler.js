@@ -17,6 +17,40 @@ for (_i = 0, _len = _ref.length; _i < _len; _i++) {
   })(Kinetic[className].prototype.init);
 }
 
+
+// setMaximumPixelRatio = function(p_maximumRatio) {
+//   var backingStoreRatio, canvas, className, context, devicePixelRatio, pixelRatio, _i, _len, _ref, _results;
+ 
+//   if (p_maximumRatio == null) {
+//     p_maximumRatio = 1;
+//   }
+//   canvas = document.createElement('canvas');
+//   context = canvas.getContext('2d');
+//   devicePixelRatio = window.devicePixelRatio || 1;
+//   backingStoreRatio = context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio || context.msBackingStorePixelRatio || context.oBackingStorePixelRatio || context.backingStorePixelRatio || 1;
+//   pixelRatio = devicePixelRatio / backingStoreRatio;
+//   _ref = ["HitCanvas", "SceneCanvas", "Canvas"];
+//   _results = [];
+//   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+//     className = _ref[_i];
+//     _results.push(Kinetic[className].prototype.init = (function(p_method) {
+//       return function(p_config) {
+//         if (p_config == null) {
+//           p_config = {};
+//         }
+//         if (p_config.pixelRatio != null) {
+//           pixelRatio = p_config.pixelRatio;
+//         }
+//         p_config.pixelRatio = pixelRatio > p_maximumRatio ? p_maximumRatio : pixelRatio;
+//         return p_method.call(this, p_config);
+//       };
+//     })(Kinetic[className].prototype.init));
+//   }
+//   return _results;
+// };
+ 
+// setMaximumPixelRatio(2);
+
 // set us up.
 $('#huckler')
 	.append($('<div id="huckler_model"  class="huckler_model"></div>'))
@@ -190,7 +224,7 @@ var guide = true;
 
 this.draw = new DrawMode($('#drawmode'));  // are we drawing?
 this.diag = new DrawMode($('#diagmode'));  // are we diagonalizing?
-this.tran = new DrawMode($('#tranmode'));  // are we calculating resolvents?
+this.tran = new DrawMode($('#tranmode'));  // are we calculating transmission?
 
 this.transport = false; // huh?
 
@@ -273,8 +307,18 @@ this.write = function(text, size) {
 // NODES
 /////////////////////////////////////////////
 // Add node
+this.node_color = function(weight, options) {
+	if ('electrode' in options) { return '#D1B01B'; }
+
+	var c = Math.round(127 + 120*weight);
+	c = Math.max(Math.min(c, 205), 0);
+	return 'rgb(' + c + ',' + c + ',' + c +')';
+};
+
 this.add_node = function(x,y,weight,options)
 {
+	console.log('test');
+
 	// Defaults
 	if (weight  === undefined) { weight = 0; }
 	if (options === undefined) { options = {}; }
@@ -284,8 +328,9 @@ this.add_node = function(x,y,weight,options)
 	if ('draggable' in options) { draggable = options['draggable']; }
 
 	// Choose node color
-	var nodeColor = 'gray';
-	if (weight < 0) { nodeColor = 'black'; }
+	var nodeColor = self.node_color(weight, options);
+
+	// if (weight < 0) { nodeColor = 'black'; }
 
 	// Create graphical node
 	var node = new Kinetic.Circle({
@@ -412,11 +457,12 @@ this.update_node = function(nid, weight) {
 	
 	// redraw the node
 	node.setRadius(14 + Math.abs(weight) * 1.5);
-	if (weight >= 0) {
-		node.setFill('gray');
-	} else {
-		node.setFill('black');
-	}
+	node.setFill(self.node_color(weight, this.nodes[nid].options));
+	// if (weight >= 0) {
+	// 	node.setFill('gray');
+	// } else {
+	// 	node.setFill('black');
+	// }
 
 	nodeLayer.batchDraw();
 
@@ -557,7 +603,7 @@ this.add_link = function(nid1,nid2,weight) {
 	ilink++; // increment running index
 
 	// Add to links object
-	self.links[line.getId()] = {'nodes': [nid1, nid2], 'weight': weight};
+	self.links[line.getId()] = {'nodes': [nid1, nid2], 'weight': parseFloat(weight)};
 
 	// Add to nodes object
 	self.nodes[nid1].links[self.nodes[nid1].links.length] = line.getId();
@@ -613,11 +659,11 @@ this.update_link = function(lid, weight) {
 		line.setPoints([self.nodes[nid1].x, self.nodes[nid1].y, self.nodes[nid2].x, self.nodes[nid2].y]);
 
 	} else { // update weight
-		if (this.links[lid].weight == weight) {
+		if (this.links[lid].weight == parseFloat(weight)) {
 			return;
 		}
 
-		this.links[lid].weight = weight;
+		this.links[lid].weight = parseFloat(weight);
 
 		line = linkLayer.get('#' + lid)[0];
 		line.setStrokeWidth( Math.abs(weight * 7 ) );
@@ -776,22 +822,22 @@ this.clearEigen = function() {
 };
 
 // Draw the molecular orbitals
-this.drawMO = function(inodes,energy,orbital) {
+this.drawMO = function(inodes, energy, index, orbital) {
 
 	// wipe the slate clean
 	eigenLayer.destroyChildren();
 
 	var N = orbital.length;
 
-	var sgn = sign(orbital[0]);
+	var sgn = hunum.sign(orbital[0]);
 
 	for(var j = 0; j < N; j++) {
 		var node = this.nodes[inodes[j]];
-		this.drawMOweight(node.x,node.y,sgn*orbital[j]);
+		this.drawMOweight(node.x, node.y, sgn*orbital[j]);
 	}
 
 	guide = false;
-	this.write('Energy: ' + Math.round(energy*1000)/1000);
+	this.write('Energy['+index+']: ' + Math.round(energy*1000)/1000);
 
 	eigenLayer.batchDraw();
 
@@ -947,15 +993,15 @@ this.loadFromString = function(str) {
 
 function Spectrum(container) {
 
-var self = this;
+var self = this;  // self hack
 
-this.inodes = [];
-this.energies = [];
-this.orbitals = [];
-this.selected = false;
-this.update = true;
+this.inodes = [];       // the inodes
+this.energies = [];     // list of eigenenergies
+this.orbitals = [];     // list of eigenfunctions
+this.selected = false;  // the selected 
+this.update = true;     // 
 
-this.settings = {'adhocshift': 10}; // numerical trick
+this.settings = {'adhocshift': 10.123}; // numerical trick
 
 // Create drawing stage
 var stage = new Kinetic.Stage({
@@ -1045,7 +1091,7 @@ this.diagonalize = function() {
 	var ev = numeric.eig(H,100000); // get eigensolutions
 
 	// reorder by eigenvalues
-	var indices = range(0,(ev.lambda.x).length-1);
+	var indices = hunum.range(0, (ev.lambda.x).length-1);
 	indices.sort(function(a,b) { return ev.lambda.x[a] < (ev.lambda.x)[b] ? -1 : 1;  });
 
 	this.energies = [];
@@ -1170,7 +1216,7 @@ this.select = function(group) {
 		return;
 	}
 
-	model.drawMO(this.inodes,this.energies[i],this.orbitals[i]);
+	model.drawMO(this.inodes, this.energies[i], i+1, this.orbitals[i]);
 
 	this.kineticGroupSetStroke(group,'red');
 	this.unselect();
@@ -1208,7 +1254,6 @@ this.unselect = function() {
 };
 
 this.kineticGroupSetStroke = function(group,stroke) {
-
 	var children = group.getChildren(); // get children of group
 
     for(var i=0;i<children.length;i++){
@@ -1221,6 +1266,7 @@ this.reset = function() {
 	this.inodes = [];
 	this.energies = [];
 	this.orbitals = [];
+
 	this.unselect();
 
 	energyLayer.destroyChildren().draw();
@@ -1234,40 +1280,33 @@ this.reset = function() {
 function Transport() {
 
 	this.plot = function() {
+
+		// Calculate transmission
 		var res = [this.calculate()];
 
-		if (res === false) { return; }
+		// Abort if error
+		if (res === false) { return false; }
 
+		// Build html 
 		if ($('#huckler_transport h3').length == 0) {
 			$('#huckler_transport')
-				.append($('<h3></h3>').html('log[ (E &ndash; H)<sup>-2</sup> ]'))
+				.append($('<h3></h3>').html('log<sub>10</sub> T(E)'))
 				.append($('<div id="transport_plot"></div'))
 				.append($('<span>E</span>'));
 		}
 
-		var options = {
-			selection: {
-				mode: "xy"
-			}
-		};
-
-		var plot = $.plot("#transport_plot",res,options);
-
+		var plot = $.plot("#transport_plot", res, {selection: { mode: "xy" } });
 
 		$("#huckler_transport").bind("plotselected", function (event, ranges) {
-
 			// clamp the zooming to prevent eternal zoom
-
 			if (ranges.xaxis.to - ranges.xaxis.from < 0.00001) {
 				ranges.xaxis.to = ranges.xaxis.from + 0.00001;
 			}
-
 			if (ranges.yaxis.to - ranges.yaxis.from < 0.00001) {
 				ranges.yaxis.to = ranges.yaxis.from + 0.00001;
 			}
 
-			// do the zooming
-
+			// do the plot zooming
 			var plot = $.plot("#transport_plot", res,
 				$.extend(true, {}, options, {
 					xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
@@ -1279,65 +1318,82 @@ function Transport() {
 	
 	this.calculate = function(xlim) {
 
-		// Is there electrodes
+		// Is there connected electrodes? If not, then abort. 
 		var electrodes = model.get_electrodes();
 		if (electrodes.length < 2) { return false; }
 		if (model.nodes[electrodes[0]].links.length < 1 || model.nodes[electrodes[1]].links.length < 1) {
 			return false;
 		}
-
-		// Is there nodes?
+		// Is there nodes? Then diagonalize.
 		if (spectrum.energies.length > 1 ) {
 			spectrum.diagonalize();
 		}
-
+		// Guess xlim if unspecified
 		if (xlim === undefined) {
 			xlim = [Math.min.apply(null,spectrum.energies), Math.max.apply(null, spectrum.energies)]
 		}
 		
 		var omegas = numeric.linspace(xlim[0],xlim[1],600);
-		var res = this.resolvent(omegas,electrodes);
-
-		// console.log(omegas);
-		// console.log(res);
+		var res = this.transmission(omegas,electrodes);
 
 		return numeric.transpose([omegas, res]);
 	};
 
-	this.resolvent = function (omegas,electrodes) {
+	this.transmission = function (omegas,electrodes) {
 
-		// Get Hamiltonian
-		var H = spectrum.hamiltonian(model);
-
-		var inner = newFilledArray(spectrum.energies.length,0);
-
-		var el0 = model.nodes[electrodes[0]];
+		var N = spectrum.energies.length; 		// system size
+		var H = spectrum.hamiltonian(model); 	// Hamiltonian
+		
+		var inner = hunum.filled_array(2*N,0);  // left electrode
+		var el0 = model.nodes[electrodes[0]];   // node index of left electrode
 		for (var i = 0; i < el0.links.length; i ++) {
 			var k = 0;
 			if ((model.links[el0.links[i]]).nodes[0]==electrodes[0]) {
 				k = 1;
 			}
-			inner[spectrum.inodes.indexOf(model.links[el0.links[i]].nodes[k])] = model.links[el0.links[i]].weight;
+			w = model.links[el0.links[i]].weight;
+			inner[spectrum.inodes.indexOf(model.links[el0.links[i]].nodes[k])] = hunum.sign(w)*Math.sqrt(Math.abs(w));
 		}
 
-		var outer = newFilledArray(spectrum.energies.length,0);
+		console.log(w)
 
-		var el1 = model.nodes[electrodes[1]];
-
+		var outer = hunum.filled_array(2*N,0);  // right electrode
+		var el1 = model.nodes[electrodes[1]];   // node index of right electrode
 		for (var j = 0; j < el1.links.length; j ++) {
 			var m = 0;
-			if ((model.links[el1.links[j]]).nodes[0]==electrodes[1]) {
+			if ((model.links[el1.links[j]]).nodes[0]==electrodes[1]) { 
 				m = 1;
 			}
-			outer[spectrum.inodes.indexOf(model.links[el1.links[j]].nodes[m])] = model.links[el1.links[j]].weight;
+			w = model.links[el1.links[j]].weight;
+			outer[spectrum.inodes.indexOf(model.links[el1.links[j]].nodes[m])] = hunum.sign(w)*Math.sqrt(Math.abs(w));
 		}
 
-		var res = Array(omegas.length);
+		// Coupling matrix
+		var gamma = hunum.zeros_matrix(N, N);
+		for (var j = 0; j < N; j ++) {
+			gamma[j][j] = (Math.pow(inner[j],2)+Math.pow(outer[j],2))/2;
+		}
 
-		var id = numeric.identity(spectrum.energies.length);
-
+		console.log(gamma)
+		
+		var res = Array(omegas.length);     // pre-alloc result
+		var id = numeric.identity(N); 		// matrix identity
 		for (var l=0; l < omegas.length; l++) {
-			res[l] = Math.log(Math.abs(numeric.dot(inner,numeric.solve( numeric.add(numeric.mul(-omegas[l]-spectrum.settings.adhocshift,id),H,false),outer))));
+			// Complex inverse by solution for (x + i y) of the equation:
+			// (Re + i Im) (x + i y) = (a + i b)
+			// By a 2Nx2N method:
+			//	[ Re, -Im ] . [ x ]  = [ a ]
+			//	[ Im,  Re ]   [ y ]    [ b ]
+
+			// Real part E - H
+			var EmH = numeric.add(H, numeric.diag(hunum.filled_array(N, -omegas[l]-spectrum.settings.adhocshift)))
+
+			// Extended matrix
+			var M = numeric.blockMatrix([[EmH, numeric.neg(gamma)],[gamma, EmH]])
+
+			// Calculate log(transmission)
+			res[l] = Math.log(Math.abs(numeric.dot(outer, numeric.solve(M, inner))))
+			// res[l] = Math.log(Math.abs(numeric.dot(inner,numeric.solve( numeric.add(numeric.mul(-omegas[l]-spectrum.settings.adhocshift,id),H,false),outer))));
 		}
 
 		return res;
@@ -1388,37 +1444,41 @@ function DrawMode(button, fcn) {
 	};
 }
 
-// Numeric range (from, to, )
-function range(a,b,c,d){d=[];c=b-a+1;while(c--)d[c]=b--;return d;}
-
-// Signum function
-function sign(x) { return x < 0 ? -1 : 1; }
-
-// Create a new array filled with values <val>
-function newFilledArray(length, val) {
-    var array = [];
-    for (var i = 0; i < length; i++) {
-        array[i] = val;
-    }
-    return array;
-}
-
-// Hamiltonian
-function zeros(N,M) {
-	var H = [];
-	for(var i=0; i<N; i++) {
-		H[i] = [];
-		for(var j=0; j<M; j++) {
-			H[i][j] = 0.0;
+// Utility numerics library
+var hunum = {
+	range : function(a,b,c,d){
+		// Numeric range (from, to, )
+		d=[];c=b-a+1;while(c--)d[c]=b--;return d;
+	},
+	sign : function(x) { 
+		// Signum function
+		return x < 0 ? -1 : 1; 
+	},
+	filled_array : function(length, val) {
+		// Create a new array filled with values <val>
+	    var array = [];
+    	for (var i = 0; i < length; i++) {
+       		array[i] = val;
+    	}
+    	return array;
+	},
+	zeros_matrix : function(N,M) {
+		// Hamiltonian
+		var H = [];
+		for(var i=0; i<N; i++) {
+			H[i] = [];
+			for(var j=0; j<M; j++) {
+				H[i][j] = 0.0;
+			}
 		}
+		return H;
 	}
-	return H;
 }
 
 function ring(N) {
 
 	// hamiltonian
-	var H = zeros(N,N);
+	var H = hunum.zeros_matrix(N,N);
 	for(var i=0; i<N; i++) {
 		H[i][(i+1) % N] = -1;
 		H[(i+1)%N][i] = -1;
@@ -1444,7 +1504,7 @@ function chain(N, d) {
 	
 	if (isNaN(d)) { d = -1; }
 
-	var H = zeros(N,N);
+	var H = hunum.zeros_matrix(N,N);
 	for (var i=0; i< N-1; i++) {
 		if (i % 2 == 0) {
 			H[i][i+1] = -d;

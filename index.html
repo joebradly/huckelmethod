@@ -1,10 +1,11 @@
-<html lang="en" manifest="huckler.manifest?rev5">
+<!-- <html lang="en" manifest="huckler.manifest?rev5"> fixme -->
+<html>
 <head>
 <title>huckelmethod.com</title>
 <meta http-equiv="content-type" content="text/html;charset=UTF-8"> 
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<meta name="description" content="Draw and solve chemistry Hückel molecular models. Calculate the molecular orbitals or the transmission resolvents.">
+<meta name="description" content="Draw and solve chemistry Hückel molecular models. Calculate the molecular orbitals or the Landauer-Büttiker transmission.">
 <meta name="distribution" content="web">
 <meta name="keyword" content="huckel, hückel, chemistry, pi system, diagonalization, huckel method, molecular, orbital, MO, HOMO, LUMO">
 <!-- Open Graph -->
@@ -44,27 +45,34 @@
 <li><a href="about.html">about</a></li>
 <a class="feedback" href="http://huckel.uservoice.com">Suggestions and Feedback</a>
 </menu>
-<div class="teaser"><span>Draw molecule</span>  pi-systems, calculate <span>eigenspectra</span>  and find transport <span>resolvents</span>.</div>
+<div class="teaser"><span>Draw molecule</span> pi-systems, calculate <span>eigenspectra</span> and find the Landauer-Büttiker <span>transmission</span>.</div>
 <div class="body">
 
 <div id="huckler">
 <div class="huckler_controls">
 	<div>
-	Draw model <a id="drawmode" class="button">OFF</a>
-	-
-	<a id="clear" class="button">Clear Model</a>
+	<h4>Model</h4>
+	<div class="right">
+		Draw <a id="drawmode" class="togglebutton">OFF</a>
+		&nbsp;
+		<a id="clear" class="button">Clear Model</a>
+	</div>
 	</div>
 </div>
 <div class="transport_controls">
 	<div>
+		<h4>Transmission</h4>
+		<div class="right">
 		<a id="electrodes" class="button" data-mode="add">+ Leads</a>
-		<a id="resolvent" class="button">Resolvent</a>
-		<a id="tranmode" class="button">OFF</a>
+		</div>
+		<!-- <a id="transmission" class="button">Transmission</a> -->
+		<!-- <a id="tranmode" class="togglebutton">OFF</a> -->
 	</div>
 </div>
 <div class="spectrum_controls">
 	<div>
-	 <a id="diagonalize" class="button">Eigenspectrum<a/> <a id="diagmode" class="button">OFF</a>
+	<h4>Eigenspectrum</h4>
+	 <!-- <a id="diagonalize" class="button">Eigenspectrum<a/> <a id="diagmode" class="togglebutton">OFF</a> -->
 	</div>
 </div>
 </div>
@@ -132,7 +140,8 @@
 	</div>
 </div>
 
-<script defer="defer" src="assets/js/huckler.min.js"></script>
+<!-- fixme -->
+<script defer="defer" src="assets/js/huckler.js"></script>
 
 <script type="text/javascript">
 $(function() {
@@ -165,7 +174,7 @@ $(function() {
 		}		
 	});
 
-	$('#resolvent').on('click',function() {
+	$('#transmission').on('click',function() {
 		transport.plot();
 	})
 
