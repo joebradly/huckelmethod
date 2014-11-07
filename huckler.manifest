@@ -10,6 +10,7 @@ CACHE MANIFEST
 /assets/js/jquery.flot.min.js
 /assets/js/jquery.flot.selection.min.js
 /assets/js/huckler.min.js
+/assets/js/huckler.js
 /assets/css/huckler.css
 /assets/img/interface-01.png
 /assets/img/interface-02.png
