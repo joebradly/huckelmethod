@@ -96,10 +96,6 @@ h1 {
 	display: inline-block;
 	border-radius: 2px;
 	color: #eee;
-}
-
-.button:hover {
-	background-color: #3D8F45;
 	cursor: pointer;
 }
 
@@ -109,10 +105,6 @@ h1 {
 
 .toggle {
 	background-color: #4ca454;
-}
-
-.togglebutton:hover {
-	background-color: #aaa;
 }
 
 .inline {

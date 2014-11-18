@@ -1,5 +1,4 @@
-<html lang="en" manifest="huckler.manifest?rev7">
-<html>
+<html lang="en" manifest="huckler.manifest?rev8">
 <head>
 <title>huckelmethod.com</title>
 <meta http-equiv="content-type" content="text/html;charset=UTF-8"> 
@@ -37,7 +36,6 @@
 </head>
 <body>
 
-
 <menu>
 <h1>Hückel Method</h1>
 <li class="selected"><a href="#">app</a></li>
@@ -53,17 +51,17 @@
 	<div>
 	<h4>Model</h4>
 	<div class="right">
-		Draw <a id="drawmode" class="togglebutton">OFF</a>
+		Draw <a id="drawmode" class="togglebutton"  onclick="">OFF</a>
 		&nbsp;
-		<a id="clear" class="button">Clear Model</a>
+		<a id="clear" class="button"  onclick="">Clear Model</a>
 	</div>
 	</div>
 </div>
 <div class="transport_controls">
 	<div>
-		<h4><a id="transmission">Transmission</a></h4>
+		<h4><a id="transmission" onclick="">Transmission</a></h4>
 		<div class="right">
-		<a id="electrodes" class="button" data-mode="add">+ Leads</a>
+		<a id="electrodes" class="button" data-mode="add" onclick="">+ Leads</a>
 		</div>
 		<!--  -->
 		<!-- <a id="tranmode" class="togglebutton">OFF</a> -->
@@ -153,16 +151,17 @@ $(function() {
 	// Toggle transport mode
 	model.tran.toggle();
 	// Activate clear 
-	$('#clear').on('click',function() {
+	$('#clear').on('click touchstart',function() {
 		reset();
 		model.draw.toggle();
 		model.diag.toggle();
 		model.tran.toggle();
+		return false;
 	});
 
-	$('#electrodes').on('click', function() {
+	$('#electrodes').on('click touchstart', function() {
 		var button = $(this);
-
+		
 		if (button.attr('data-mode')=='add') {
 			model.add_electrodes();
 			$(this).html('<b>&ndash;</b> Leads');
@@ -171,15 +170,18 @@ $(function() {
 			model.remove_electrodes();
 			$(this).html('<b>+</b> Leads')
 			button.attr('data-mode','add');
-		}		
+		}
+		return false;
 	});
 
-	$('#transmission').on('click',function() {
+	$('#transmission').on('click touchstart',function() {
 		transport.plot();
+		return false;
 	})
 
-	$('#diagonalize').on('click',function() {
+	$('#diagonalize').on('click touchstart',function() {
 		spectrum.diagonalize();
+		return false;
 	});
 });
 

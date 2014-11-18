@@ -17,7 +17,6 @@ for (_i = 0, _len = _ref.length; _i < _len; _i++) {
   })(Kinetic[className].prototype.init);
 }
 
-
 // setMaximumPixelRatio = function(p_maximumRatio) {
 //   var backingStoreRatio, canvas, className, context, devicePixelRatio, pixelRatio, _i, _len, _ref, _results;
  
@@ -248,29 +247,30 @@ stage.add(nodeLayer);
 stage.add(eigenLayer);
 
 // Listen for clicks
-stage.on('contentMousedown', function (e) {
+stage.on('contentMousedown contentTouchstart', function (e) {
 	if (e.evt.cancelBubble===false)
 	{
 		// clear eigenlayer and update message
 		self.clearEigen();
 
 		// console.log(e)
-
-		// Are we drawing or selecting?
+		// Drawing or selecting?
 		if (self.draw.mode) 
 		{   
-			console.log('contentMouse');
-			// we are drawing -> add node
-			self.add_node(e.evt.offsetX | e.evt.layerX, e.evt.offsetY | e.evt.layerY);
+			console.log('contentMouse/contentTouchstart');
+			// drawing -> add node
+			self.add_node(stage.pointerPos.x, stage.pointerPos.y)
+			// self.add_node(e.evt.offsetX | e.evt.layerX, e.evt.offsetY | e.evt.layerY);
 			
 		} 
 		else if (self.selected !== false) 
 		{ 
-			// we are selecting -> deselect node
+			// selecting -> deselect node
 			self.unselect();
 		}
 	}
 });
+
 
 // Function for writing message to the linkLayer
 this.write = function(text, size) {
@@ -315,10 +315,9 @@ this.node_color = function(weight, options) {
 	return 'rgb(' + c + ',' + c + ',' + c +')';
 };
 
+
 this.add_node = function(x,y,weight,options)
 {
-	console.log('test');
-
 	// Defaults
 	if (weight  === undefined) { weight = 0; }
 	if (options === undefined) { options = {}; }
@@ -329,8 +328,6 @@ this.add_node = function(x,y,weight,options)
 
 	// Choose node color
 	var nodeColor = self.node_color(weight, options);
-
-	// if (weight < 0) { nodeColor = 'black'; }
 
 	// Create graphical node
 	var node = new Kinetic.Circle({
@@ -418,15 +415,18 @@ this.add_node = function(x,y,weight,options)
 	return node.getId();
 };
 
-// Touching the node
+
+// Touching the circled node
 this.touch_circle = function(elm) {
 	// A node is already selected 
-	if (this.selected !== false && this.selected.getName() == 'node') {		// selected node
+	if (this.selected !== false && this.selected.getName() == 'node') {		
+		// selected node
 		if (this.selected.getId()==elm.getId()) {
 			this.unselect();
 		} else {
 			// Are the two nodes already linked?
-			var test = this.test_link(elm.getId(),this.selected.getId());			// add_link between them. false=same, number=exist ,true=creates
+			var test = this.test_link(elm.getId(),this.selected.getId());
+			// add_link between them. false=same, number=exist, true=creates			
 			// No, they are not linked. Add a link
 			if (test === false && this.draw.mode) { // no link
 				test = this.add_link(elm.getId(),this.selected.getId());
@@ -439,12 +439,13 @@ this.touch_circle = function(elm) {
 				this.select(elm);
 			}
 		}
-	} else { // select node
+	} else { 
+		// select node
 		this.select(elm);
 	}
 };
 
-// Update the node based on weight
+// Update the node based on it's weight
 this.update_node = function(nid, weight) {
 
 	if (this.nodes[nid].weight == weight) { return; }
@@ -473,7 +474,7 @@ this.update_node = function(nid, weight) {
 // Remove node
 this.remove_node = function(nid) {
 
-	iselectrode = this.is_electrode(nid)
+	var iselectrode = this.is_electrode(nid)
 
 	// console
 	console.log('remove ' + nid);
@@ -508,11 +509,12 @@ this.add_electrodes = function() {
 	var h = stage.getHeight();
 	var w = stage.getWidth();
 
-	this.add_node(0,h/2,10,{'electrode': true, 'draggable': false});
-	this.add_node(w,h/2,10,{'electrode': true, 'draggable': false});
+	this.add_node(0, h/2, 10,{'electrode': true, 'draggable': false});
+	this.add_node(w, h/2, 10,{'electrode': true, 'draggable': false});
 
 	console.log('Added electrodes')
 };
+
 
 this.get_electrodes = function() {
 	var elec = [];
@@ -525,6 +527,7 @@ this.get_electrodes = function() {
 	return elec;
 };
 
+
 this.remove_electrodes = function() {
 	var remove = this.get_electrodes();
 
@@ -532,6 +535,7 @@ this.remove_electrodes = function() {
 		this.remove_node(remove[i]);
 	}
 };
+
 
 this.is_electrode = function(n) {
 	if ('electrode' in model.nodes[n].options && model.nodes[n].options['electrode'] === true)
@@ -623,6 +627,7 @@ this.add_link = function(nid1,nid2,weight) {
 	return line.getId();
 };
 
+
 // Touching link
 this.touch_line = function(elm) {
 
@@ -639,6 +644,7 @@ this.touch_line = function(elm) {
 	}
 };
 
+
 // update link based on weight
 this.update_links = function(lids,weight) {
 	for(var i = 0; i < lids.length; i ++) {
@@ -646,6 +652,7 @@ this.update_links = function(lids,weight) {
 	}
 	return;
 };
+
 
 // Update the links
 this.update_link = function(lid, weight) {
@@ -655,7 +662,7 @@ this.update_link = function(lid, weight) {
 		var nid1 = self.links[lid].nodes[0];
 		var nid2 = self.links[lid].nodes[1];
 	
-		line = linkLayer.get('#' + lid)[0];
+		var line = linkLayer.get('#' + lid)[0];
 		line.setPoints([self.nodes[nid1].x, self.nodes[nid1].y, self.nodes[nid2].x, self.nodes[nid2].y]);
 
 	} else { // update weight
@@ -665,7 +672,7 @@ this.update_link = function(lid, weight) {
 
 		this.links[lid].weight = parseFloat(weight);
 
-		line = linkLayer.get('#' + lid)[0];
+		var line = linkLayer.get('#' + lid)[0];
 		line.setStrokeWidth( Math.abs(weight * 7 ) );
 		if (weight >= 0) {
 			line.setStroke('gray');
@@ -746,11 +753,11 @@ this.select = function(elm) {
 	
 	if (this.selected.getName()=='link') {
 		linkLayer.batchDraw();
-		editor.edit('link',elm.getId());
+		editor.edit('link', elm.getId());
 	} else {
 		nodeLayer.batchDraw();
 		if (!this.is_electrode(elm.getId())) {
-			editor.edit('node',elm.getId());
+			editor.edit('node', elm.getId());
 		}
 	}
 	console.log('selected ' + elm.getId());
@@ -777,10 +784,12 @@ this.unselect = function() {
 	// this.update(this.selected.getName(),this.selected);
 	this.selected = false;
 };
+
 // get object 
 this.get = function(subject,id) {
 	return (subject == 'link' ? this.links[id] : this.nodes[id]); 
 };
+
 // remove object
 this.remove = function(subject,id) {
 	if (subject == 'link') {
@@ -788,6 +797,7 @@ this.remove = function(subject,id) {
 	}
 	return this.remove_node(id);
 };
+
 // reset the stage 
 this.reset = function () {
 	eigenLayer.destroyChildren().draw();
@@ -820,6 +830,7 @@ this.clearEigen = function() {
 	spectrum.unselect();
 	eigenLayer.destroyChildren().draw();
 };
+
 
 // Draw the molecular orbitals
 this.drawMO = function(inodes, energy, index, orbital) {
@@ -882,6 +893,7 @@ this.evaluate = function(loading) {
 		$('#modellink').html('');
 	}
 };
+
 // list connections to leads
 this.connections = function() {
 	// leads
@@ -912,6 +924,7 @@ this.connections = function() {
 	}
 	return L;
 }
+
 // IO
 //////////////////////////////////////////////////
 // DUMP function 
@@ -929,6 +942,7 @@ this.dump = function() {
 
 	return json;
 };
+
 // load a model
 this.load = function(H,xy,L) {
 
@@ -972,6 +986,7 @@ this.load = function(H,xy,L) {
 	this.diag.toggle();
 
 };
+
 
 this.loadFromString = function(str) {
 	try {
@@ -1205,8 +1220,7 @@ this.drawControls = function() {
 	controlLayer.add(down);
 
 	controlLayer.batchDraw();
-		// controlLayer.draw();
-
+	// controlLayer.draw();
 };
 
 this.select = function(group) {
@@ -1416,11 +1430,12 @@ function DrawMode(button, fcn) {
 	var self = this;
 
 	this.mode = false;
-	this.button = button.click(function() {
+	this.button = button.on('click touchstart', function() {
 		self.toggle();
 		if (fcn !== undefined) {
 			fcn();
 		}
+		return false;
 	});
 
 	this.toggle = function() {
